@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import 'reactflow/dist/style.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --bg: #1c1917; /* stone-900 */
+  --ink: #f5f5f4; /* stone-100 */
+  --line: #44403c; /* stone-700 */
+  --panel-bg: #292524; /* stone-800 */
+  
+  /* Typography Tokens - Limited to 3 sizes */
+  --text-sm: 0.6875rem; /* 11px - Metadata, labels */
+  --text-base: 0.8125rem; /* 13px - Body, inputs */
+  --text-lg: 1rem;      /* 16px - Headings */
+}
+
+@layer utilities {
+  .type-sm {
+    font-size: var(--text-sm);
+    line-height: 1.4;
+  }
+  .type-base {
+    font-size: var(--text-base);
+    line-height: 1.5;
+  }
+  .type-lg {
+    font-size: var(--text-lg);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-size: var(--text-base);
+}
+
+/* React Flow Dark Mode Overrides */
+.react-flow__node {
+  font-size: var(--text-sm);
+}
+
+.react-flow__controls-button {
+  background: #292524;
+  border-bottom: 1px solid #44403c;
+  fill: #f5f5f4;
+}
+
+.react-flow__controls-button:hover {
+  background: #44403c;
+}
+
+.react-flow__minimap {
+  background: #292524;
+}
