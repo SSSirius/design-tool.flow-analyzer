@@ -22,27 +22,27 @@ export default function FlowList({ isOpen, onClose, flows, language, activeFlowI
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/45 backdrop-blur-xl z-40"
           />
-          
+
           {/* Panel */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-96 bg-stone-900 border-l border-stone-800 z-50 shadow-2xl flex flex-col"
+            className="glass-panel fixed right-3 top-3 bottom-3 w-96 rounded-xl z-50 flex flex-col overflow-hidden"
           >
-            <div className="p-4 border-b border-stone-800 flex items-center justify-between">
+            <div className="p-4 border-b border-[#303030] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <GitBranch className="text-stone-400" size={20} />
-                <h2 className="type-lg font-bold text-stone-100">
+                <GitBranch className="text-[#b8bcc7]" size={20} />
+                <h2 className="type-lg font-bold text-white">
                   {language === 'zh' ? '流程场景' : 'User Flows'}
                 </h2>
               </div>
-              <button 
+              <button
                 onClick={onClose}
-                className="p-1 hover:bg-stone-800 rounded-full text-stone-400 hover:text-stone-200 transition-colors"
+                className="p-1 hover:bg-[#242424] rounded-md text-[#9da3af] hover:text-white transition-colors"
               >
                 <X size={20} />
               </button>
@@ -50,21 +50,23 @@ export default function FlowList({ isOpen, onClose, flows, language, activeFlowI
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {flows.length === 0 ? (
-                <div className="text-center py-12 text-stone-500 type-sm">
+                <div className="text-center py-12 text-[#777777] type-sm">
                   {language === 'zh' ? '暂无流程数据' : 'No flow scenarios available'}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {/* "All" option */}
                   <button
-                    onClick={() => onSelectFlow(null)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all ${
-                      activeFlowId === null
-                        ? 'bg-indigo-900/30 border-indigo-500/50 text-indigo-200'
-                        : 'bg-stone-800/50 border-stone-700/50 text-stone-400 hover:bg-stone-800 hover:text-stone-200'
-                    }`}
+                    onClick={() => {
+                      onSelectFlow(null);
+                      onClose();
+                    }}
+                    className={`w-full text-left p-3 rounded-lg border transition-all ${activeFlowId === null
+                        ? 'bg-[#303030] border-[#565656] text-white'
+                        : 'bg-[#1a1a1a] border-[#303030] text-[#9da3af] hover:bg-[#242424] hover:text-white'
+                      }`}
                   >
-                    <span className="type-base font-bold">
+                    <span className="type-sm font-bold">
                       {language === 'zh' ? '显示全部' : 'Show All'}
                     </span>
                   </button>
@@ -77,28 +79,29 @@ export default function FlowList({ isOpen, onClose, flows, language, activeFlowI
                     return (
                       <button
                         key={flow.id}
-                        onClick={() => onSelectFlow(isActive ? null : flow.id)}
-                        className={`w-full text-left p-3 rounded-lg border transition-all group ${
-                          isActive
-                            ? 'bg-indigo-900/30 border-indigo-500/50'
-                            : 'bg-stone-800/50 border-stone-700/50 hover:bg-stone-800'
-                        }`}
+                        onClick={() => {
+                          onSelectFlow(isActive ? null : flow.id);
+                          onClose();
+                        }}
+                        className={`w-full text-left p-3 rounded-lg border transition-all group ${isActive
+                            ? 'bg-[#303030] border-[#565656]'
+                            : 'bg-[#1a1a1a] border-[#303030] hover:bg-[#242424]'
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className={`type-base font-bold ${isActive ? 'text-indigo-200' : 'text-stone-200 group-hover:text-white'}`}>
+                          <h3 className={`type-sm font-bold ${isActive ? 'text-white' : 'text-[#d7d9df] group-hover:text-white'}`}>
                             {name}
                           </h3>
-                          {isActive && <ArrowRight size={14} className="text-indigo-400" />}
+                          {isActive && <ArrowRight size={14} className="text-[#d8d8d8]" />}
                         </div>
-                        
-                        <p className={`type-sm leading-tight ${isActive ? 'text-indigo-300/70' : 'text-stone-500 group-hover:text-stone-400'}`}>
+
+                        <p className={`type-sm leading-tight ${isActive ? 'text-[#d0d0d0]' : 'text-[#8a8a8a] group-hover:text-[#ababab]'}`}>
                           {description}
                         </p>
-                        
+
                         <div className="mt-2 flex items-center gap-1.5">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            isActive ? 'bg-indigo-900/50 text-indigo-300' : 'bg-stone-900 text-stone-500'
-                          }`}>
+                          <span className={`type-xs px-1.5 py-0.5 rounded ${isActive ? 'bg-[#404040] text-white' : 'bg-[#242424] text-[#8a8a8a]'
+                            }`}>
                             {flow.nodeIds.length} {language === 'zh' ? '步骤' : 'Steps'}
                           </span>
                         </div>
@@ -108,9 +111,9 @@ export default function FlowList({ isOpen, onClose, flows, language, activeFlowI
                 </div>
               )}
             </div>
-            
-            <div className="p-4 border-t border-stone-800 bg-stone-900 text-[10px] text-stone-500 text-center">
-               {language === 'zh' ? '点击高亮特定流程路径' : 'Click to highlight specific flow path'}
+
+            <div className="p-4 border-t border-[#303030] bg-[#181818] type-xs text-[#777777] text-center">
+              {language === 'zh' ? '点击高亮特定流程路径' : 'Click to highlight specific flow path'}
             </div>
           </motion.div>
         </>

@@ -1,11 +1,12 @@
-import { useState, useRef, ChangeEvent, DragEvent, ClipboardEvent } from 'react';
-import { Upload, Play, Loader2, FileText, CheckSquare, ImagePlus, Settings, ChevronDown, ChevronUp, Wifi } from 'lucide-react';
+import { useState, useRef, useLayoutEffect, useEffect, ChangeEvent, DragEvent, ClipboardEvent, CSSProperties } from 'react';
+import { Upload, Play, Loader2, FileText, CheckSquare, ImagePlus, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableImage } from './SortableImage';
+import AiSettingsPanel from './AiSettingsPanel';
 import { AiSettings } from '../types';
-import { DEFAULT_AI_SETTINGS, getStoredAiSettings, storeAiSettings, testAiConnection } from '../services/ai';
+import { DEFAULT_AI_SETTINGS, getStoredAiSettings, storeAiSettings } from '../services/ai';
 
 interface InputPanelProps {
   onAnalyze: (context: string, images: string[], settings: AiSettings) => void;
@@ -21,7 +22,7 @@ interface UploadedImage {
 const TEXT = {
   zh: {
     title: "UX 流程分析器",
-    subtitle: "上传 UI 截图并描述上下文，生成流程图和边界情况。",
+    subtitle: "上传 UI 截图或描述上下文，生成流程图和边界情况。",
     contextLabel: "上下文与目标",
     contextPlaceholder: "例如：用户想要更新他们的个人资料图片...",
     imageLabel: "UI 截图 (支持多图排序)",
@@ -37,22 +38,13 @@ const TEXT = {
     dragHint: "拖拽图片调整顺序",
     aiSettings: "AI 设置",
     settingsToggle: "设置项",
-    providerLabel: "模型服务",
-    apiKeyLabel: "API Key",
-    apiKeyPlaceholder: "输入你的 API Key",
-    baseUrlLabel: "接口地址",
-    baseUrlPlaceholder: "例如：https://api.openai.com/v1",
-    analysisModelLabel: "分析模型",
-    nodeModelLabel: "节点补全模型",
-    modelHint: "支持 Gemini 或 OpenAI-compatible 接口，可直接输入自定义模型名。",
     disconnected: "未接入 AI",
     connected: "AI 已连通",
     testing: "检测中...",
-    testConnection: "测试连接"
   },
   en: {
     title: "UX Flow Analyzer",
-    subtitle: "Upload a UI screenshot and describe the context to generate a flow diagram and edge cases.",
+    subtitle: "Upload a UI screenshot or describe the context to generate a flow diagram and edge cases.",
     contextLabel: "Context & Goal",
     contextPlaceholder: "e.g., User wants to update their profile picture...",
     imageLabel: "UI Screenshots (Multi-upload)",
@@ -68,33 +60,11 @@ const TEXT = {
     dragHint: "Drag to reorder images",
     aiSettings: "AI Settings",
     settingsToggle: "Settings",
-    providerLabel: "Model Provider",
-    apiKeyLabel: "API Key",
-    apiKeyPlaceholder: "Enter your API key",
-    baseUrlLabel: "Base URL",
-    baseUrlPlaceholder: "e.g. https://api.openai.com/v1",
-    analysisModelLabel: "Analysis Model",
-    nodeModelLabel: "Node Completion Model",
-    modelHint: "Supports Gemini or OpenAI-compatible APIs. Custom model names are allowed.",
     disconnected: "AI not connected",
     connected: "AI connected",
     testing: "Testing...",
-    testConnection: "Test Connection"
   }
 };
-
-const MODEL_OPTIONS = [
-  "auto",
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4.1",
-  "gpt-4.1-mini",
-  "gemini-3.1-pro-preview",
-  "gemini-3-flash-preview",
-  "gemini-2.5-pro",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-image",
-];
 
 export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPanelProps) {
   const [context, setContext] = useState('');
@@ -103,6 +73,38 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'testing' | 'connected'>('disconnected');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const settingsAnchorRef = useRef<HTMLDivElement>(null);
+  const [anchorStyle, setAnchorStyle] = useState<CSSProperties>({});
+
+  useLayoutEffect(() => {
+    if (!showAiSettings) return;
+    const updateAnchor = () => {
+      const el = settingsAnchorRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setAnchorStyle({
+        ['--ai-anchor-left' as any]: `${rect.left}px`,
+        ['--ai-anchor-bottom' as any]: `${window.innerHeight - rect.top + 8}px`,
+        ['--ai-anchor-width' as any]: `${rect.width}px`,
+      });
+    };
+    updateAnchor();
+    window.addEventListener('resize', updateAnchor);
+    window.addEventListener('scroll', updateAnchor, true);
+    return () => {
+      window.removeEventListener('resize', updateAnchor);
+      window.removeEventListener('scroll', updateAnchor, true);
+    };
+  }, [showAiSettings]);
+
+  useEffect(() => {
+    if (!showAiSettings) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowAiSettings(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showAiSettings]);
   
   const t = TEXT[language];
 
@@ -191,15 +193,6 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
     });
   };
 
-  const handleProviderChange = (provider: AiSettings['provider']) => {
-    updateAiSettings({
-      provider,
-      analysisModel: provider === 'gemini' ? 'auto' : 'gpt-4o-mini',
-      nodeModel: provider === 'gemini' ? 'gemini-3-flash-preview' : 'gpt-4o-mini',
-      baseUrl: provider === 'gemini' ? DEFAULT_AI_SETTINGS.baseUrl : aiSettings.baseUrl || DEFAULT_AI_SETTINGS.baseUrl,
-    });
-  };
-
   const hasAiConfig = Boolean(
     aiSettings.apiKey.trim() &&
     aiSettings.analysisModel.trim() &&
@@ -218,43 +211,33 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
       ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.55)]'
       : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.65)]';
 
-  const handleTestConnection = async () => {
-    setConnectionStatus('testing');
-    try {
-      await testAiConnection(aiSettings);
-      setConnectionStatus('connected');
-    } catch (error: any) {
-      setConnectionStatus('disconnected');
-      alert(error.message || 'AI connection failed.');
-    }
-  };
-
   const handleSubmit = () => {
     if (!context.trim() && images.length === 0) return;
     onAnalyze(context, images.map(img => img.src), aiSettings);
   };
 
   return (
-    <div 
-      className="h-full flex flex-col bg-stone-900 border-r border-stone-800 p-4 overflow-y-auto text-stone-300 outline-none"
-      onPaste={handlePaste}
-      tabIndex={0}
-    >
-      <div className="mb-6">
-        <h1 className="type-lg text-stone-100 mb-1">{t.title}</h1>
-        <p className="type-sm text-stone-500">
-          {t.subtitle}
-        </p>
-      </div>
+    <>
+      <div 
+        className="relative h-full flex flex-col bg-transparent p-4 overflow-y-auto text-[#d7d9df] outline-none"
+        onPaste={handlePaste}
+        tabIndex={0}
+      >
+        <div className="mb-6">
+          <h1 className="type-lg text-white mb-1">{t.title}</h1>
+          <p className="type-sm text-[#8a8a8a]">
+            {t.subtitle}
+          </p>
+        </div>
 
       <div className="space-y-4 flex-1">
         {/* Context Input */}
         <div>
-          <label className="block type-sm font-semibold uppercase tracking-wider text-stone-500 mb-1">
+          <label className="block type-sm font-semibold uppercase tracking-wider text-[#8a8a8a] mb-3">
             {t.contextLabel}
           </label>
           <textarea
-            className="w-full h-24 p-2 bg-stone-800 border border-stone-700 rounded-md type-base text-stone-200 focus:ring-1 focus:ring-stone-500 focus:outline-none resize-none transition-all placeholder-stone-600"
+            className="glass-input input-panel-context-input"
             placeholder={t.contextPlaceholder}
             value={context}
             onChange={(e) => setContext(e.target.value)}
@@ -263,15 +246,15 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
 
         {/* Image Upload */}
         <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block type-sm font-semibold uppercase tracking-wider text-stone-500">
+          <div className="flex justify-between items-center mb-3">
+            <label className="block type-sm font-semibold uppercase tracking-wider text-[#8a8a8a]">
               {t.imageLabel}
             </label>
             {images.length > 0 && (
               <button
                 type="button"
                 onClick={() => setImages([])}
-                className="text-xs text-stone-500 hover:text-stone-300 transition-colors"
+                className="input-panel-clear-btn"
               >
                 {t.clear}
               </button>
@@ -279,9 +262,7 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
           </div>
           
           <div
-            className={`relative border border-dashed rounded-lg p-4 transition-all ${
-              images.length > 0 ? 'border-stone-700 bg-stone-800/30' : 'border-stone-700 hover:border-stone-600 bg-stone-800/50 text-center'
-            }`}
+            className={`glass-card upload-dropzone ${images.length > 0 ? 'upload-dropzone--filled' : ''}`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
           >
@@ -295,7 +276,7 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
                   items={images.map(img => img.id)} 
                   strategy={rectSortingStrategy}
                 >
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="upload-grid">
                     {images.map((img) => (
                       <SortableImage 
                         key={img.id} 
@@ -308,23 +289,23 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square border-2 border-dashed border-stone-700 rounded-lg flex flex-col items-center justify-center text-stone-500 hover:border-stone-500 hover:text-stone-300 transition-colors bg-stone-800/30 hover:bg-stone-800"
+                      className="upload-add-tile"
                     >
-                      <ImagePlus size={20} className="mb-1" />
-                      <span className="text-[10px]">{language === 'zh' ? '添加' : 'Add'}</span>
+                      <ImagePlus size={20} className="upload-add-tile-icon" />
+                      <span className="type-xs">{language === 'zh' ? '添加' : 'Add'}</span>
                     </button>
                   </div>
                 </SortableContext>
               </DndContext>
             ) : (
               <div
-                className="cursor-pointer flex flex-col items-center justify-center py-2"
+                className="upload-empty"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <div className="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center mb-2">
-                  <Upload size={14} className="text-stone-400" />
+                <div className="upload-icon-box">
+                  <Upload size={14} />
                 </div>
-                <p className="type-sm font-medium text-stone-400">{t.uploadText}</p>
+                <p className="upload-empty-text">{t.uploadText}</p>
               </div>
             )}
             
@@ -338,7 +319,7 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
             />
           </div>
           {images.length > 0 && (
-            <p className="text-[10px] text-stone-600 text-center mt-2">
+            <p className="type-xs text-[#676d78] text-center mt-2">
               {t.dragHint}
             </p>
           )}
@@ -350,10 +331,10 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
           whileTap={{ scale: 0.98 }}
           onClick={handleSubmit}
           disabled={isAnalyzing || (!context && images.length === 0)}
-          className={`w-full py-3 rounded-lg flex items-center justify-center text-stone-900 font-semibold type-base shadow-lg transition-all cursor-pointer ${
+          className={`w-full py-3 rounded-lg flex items-center justify-center font-semibold type-sm transition-all cursor-pointer ${
             isAnalyzing || (!context && images.length === 0)
-              ? 'bg-stone-700 text-stone-500 cursor-not-allowed'
-              : 'bg-stone-100 hover:bg-white'
+              ? 'bg-[#242424] text-[#6f6f6f] cursor-not-allowed border border-[#303030]'
+              : 'glass-primary hover:brightness-105'
           }`}
         >
           {isAnalyzing ? (
@@ -371,136 +352,50 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
       </div>
 
       {/* Footer Info */}
-      <div className="mt-6 pt-4 border-t border-stone-800">
-        <div className="flex items-center type-sm text-stone-600 mb-1">
+      <div className="mt-6 pt-4 border-t border-[#303030]">
+        <div className="flex items-center type-sm text-[#777d89] mb-1">
           <CheckSquare size={10} className="mr-2" />
           <span>{t.footerEdge}</span>
         </div>
-        <div className="flex items-center type-sm text-stone-600">
+        <div className="flex items-center type-sm text-[#777d89]">
           <FileText size={10} className="mr-2" />
           <span>{t.footerCheck}</span>
         </div>
 
-        <div className="relative mt-3 rounded-lg border border-stone-800 bg-stone-950/30">
+        <div
+          ref={settingsAnchorRef}
+          className={`glass-card relative mt-3 rounded-lg settings-anchor ${showAiSettings ? 'settings-anchor--raised' : ''}`}
+        >
           <button
             type="button"
             onClick={() => setShowAiSettings((open) => !open)}
-            className="flex w-full items-center justify-between px-3 py-2 text-left text-stone-400 hover:text-stone-200 transition-colors"
+            className="flex w-full items-center justify-between px-3 py-2 text-left text-[#ababab] hover:text-white transition-colors"
           >
             <span className="flex items-center gap-2 type-sm font-medium">
               <Settings size={12} />
               {t.settingsToggle}
             </span>
-            <span className="flex items-center gap-2 text-[10px] text-stone-500">
-              <span className={`h-2 w-2 rounded-full ${statusClass}`} />
+            <span className="flex items-center gap-2 type-xs text-[#8a8a8a]">
+              <span className={`h-2 w-2 rounded-md ${statusClass}`} />
               {statusText}
               {showAiSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </span>
           </button>
 
           {showAiSettings && (
-            <div className="absolute bottom-full left-0 right-0 z-30 mb-2 max-h-[58vh] overflow-y-auto rounded-lg border border-stone-700 bg-stone-900 p-3 shadow-2xl shadow-black/50">
-              <div>
-                <h2 className="type-sm font-semibold uppercase tracking-wider text-stone-500">
-                  {t.aiSettings}
-                </h2>
-                <p className="mt-1 text-[10px] leading-relaxed text-stone-600">
-                  {t.modelHint}
-                </p>
-              </div>
-
-              <div>
-                <label className="block type-sm font-semibold text-stone-500 mb-1">
-                  {t.providerLabel}
-                </label>
-                <select
-                  className="w-full p-2 bg-stone-800 border border-stone-700 rounded-md type-base text-stone-200 focus:ring-1 focus:ring-stone-500 focus:outline-none transition-all"
-                  value={aiSettings.provider}
-                  onChange={(e) => handleProviderChange(e.target.value as AiSettings['provider'])}
-                >
-                  <option value="gemini">Gemini</option>
-                  <option value="openai-compatible">OpenAI Compatible</option>
-                </select>
-              </div>
-
-              {aiSettings.provider === 'openai-compatible' && (
-                <div>
-                  <label className="block type-sm font-semibold text-stone-500 mb-1">
-                    {t.baseUrlLabel}
-                  </label>
-                  <input
-                    className="w-full p-2 bg-stone-800 border border-stone-700 rounded-md type-base text-stone-200 focus:ring-1 focus:ring-stone-500 focus:outline-none transition-all placeholder-stone-600"
-                    type="url"
-                    autoComplete="off"
-                    placeholder={t.baseUrlPlaceholder}
-                    value={aiSettings.baseUrl}
-                    onChange={(e) => updateAiSettings({ baseUrl: e.target.value })}
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block type-sm font-semibold text-stone-500 mb-1">
-                  {t.apiKeyLabel}
-                </label>
-                <input
-                  className="w-full p-2 bg-stone-800 border border-stone-700 rounded-md type-base text-stone-200 focus:ring-1 focus:ring-stone-500 focus:outline-none transition-all placeholder-stone-600"
-                  type="password"
-                  autoComplete="off"
-                  placeholder={t.apiKeyPlaceholder}
-                  value={aiSettings.apiKey}
-                  onChange={(e) => updateAiSettings({ apiKey: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block type-sm font-semibold text-stone-500 mb-1">
-                  {t.analysisModelLabel}
-                </label>
-                <input
-                  className="w-full p-2 bg-stone-800 border border-stone-700 rounded-md type-base text-stone-200 focus:ring-1 focus:ring-stone-500 focus:outline-none transition-all"
-                  list="analysis-model-options"
-                  value={aiSettings.analysisModel}
-                  onChange={(e) => updateAiSettings({ analysisModel: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block type-sm font-semibold text-stone-500 mb-1">
-                  {t.nodeModelLabel}
-                </label>
-                <input
-                  className="w-full p-2 bg-stone-800 border border-stone-700 rounded-md type-base text-stone-200 focus:ring-1 focus:ring-stone-500 focus:outline-none transition-all"
-                  list="node-model-options"
-                  value={aiSettings.nodeModel}
-                  onChange={(e) => updateAiSettings({ nodeModel: e.target.value })}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={connectionStatus === 'testing'}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-indigo-500/40 bg-indigo-500/15 px-3 py-2 type-sm font-semibold text-indigo-200 transition-colors hover:border-indigo-400/70 hover:bg-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {connectionStatus === 'testing' ? <Loader2 size={12} className="animate-spin" /> : <Wifi size={12} />}
-                {t.testConnection}
-              </button>
-
-              <datalist id="analysis-model-options">
-                {MODEL_OPTIONS.map((model) => (
-                  <option key={model} value={model} />
-                ))}
-              </datalist>
-              <datalist id="node-model-options">
-                {MODEL_OPTIONS.filter((model) => model !== "auto").map((model) => (
-                  <option key={model} value={model} />
-                ))}
-              </datalist>
-            </div>
+            <AiSettingsPanel
+              language={language}
+              settings={aiSettings}
+              connectionStatus={connectionStatus}
+              anchorStyle={anchorStyle}
+              onClose={() => setShowAiSettings(false)}
+              onUpdate={updateAiSettings}
+              onConnectionStatusChange={setConnectionStatus}
+            />
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

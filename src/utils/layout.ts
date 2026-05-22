@@ -1,8 +1,8 @@
 import dagre from 'dagre';
 import { Node, Edge, Position } from 'reactflow';
 
-const nodeWidth = 280;
-const nodeHeight = 150;
+const nodeWidth = 520;
+const nodeHeight = 220;
 
 export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   const dagreGraph = new dagre.graphlib.Graph();

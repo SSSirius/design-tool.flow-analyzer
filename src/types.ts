@@ -5,7 +5,7 @@ export interface FlowNodeData {
   edgeCases?: string[];
   checklist?: string[];
   questions?: string[]; // Robustness questions
-  type?: 'start' | 'action' | 'decision' | 'end';
+  type?: 'start' | 'action' | 'decision';
   
   // Multilingual support
   label_zh?: string;
@@ -18,18 +18,27 @@ export interface FlowNodeData {
   checklist_en?: string[];
   questions_zh?: string[];
   questions_en?: string[];
+  defaultExpanded?: boolean;
+  layoutDirection?: 'LR' | 'TB';
+  variant?: 'onboarding';
+  onboardingStep?: string;
 }
 
 export interface ComponentData {
   name: string;
   type: string;
   states: string[];
+  pages?: string[];
+  // 该组件出现在流程中的哪些节点上 —— 用于"点组件聚焦相关节点"
+  nodeIds?: string[];
   
   // Multilingual support
   name_zh?: string;
   name_en?: string;
   states_zh?: string[];
   states_en?: string[];
+  pages_zh?: string[];
+  pages_en?: string[];
 }
 
 export interface UsabilityScore {
@@ -42,6 +51,16 @@ export interface UsabilityScore {
   category_en?: string;
   reason_zh?: string;
   reason_en?: string;
+}
+
+export interface PageSuggestion {
+  name: string;
+  description: string;
+  // Multilingual
+  name_zh?: string;
+  name_en?: string;
+  description_zh?: string;
+  description_en?: string;
 }
 
 export interface FlowPath {
@@ -58,7 +77,7 @@ export interface FlowPath {
 }
 
 export interface AiSettings {
-  provider: 'gemini' | 'openai-compatible';
+  provider: 'gemini' | 'openai-compatible' | 'z-ai-coding';
   apiKey: string;
   baseUrl: string;
   analysisModel: string;
@@ -86,6 +105,7 @@ export interface AnalysisResult {
   summary_en?: string;
   components?: ComponentData[];
   usabilityScores?: UsabilityScore[];
+  pageSuggestions?: PageSuggestion[];
   flows?: FlowPath[];
 }
 

@@ -1,16 +1,32 @@
 import { memo, useState, useEffect } from 'react';
 import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
-import { CheckCircle2, AlertTriangle, FileText, ChevronDown, ChevronUp, HelpCircle, Edit2, Check, X, Sparkles, Loader2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
+  Edit2,
+  Check,
+  X,
+  Sparkles,
+  Loader2,
+  Play,
+  Route,
+  GitFork,
+  Plus,
+} from 'lucide-react';
 import { generateNodeDetails } from '../services/ai';
 
-const CustomNode = ({ id, data }: NodeProps) => {
-  const [expanded, setExpanded] = useState(false);
+const CustomNode = ({ id, data, selected }: NodeProps) => {
+  const [expanded, setExpanded] = useState(Boolean(data.defaultExpanded));
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(data.label || '');
   const [editDesc, setEditDesc] = useState(data.description || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [enhancedData, setEnhancedData] = useState<any>(null);
-  const { setNodes } = useReactFlow();
+  const { setNodes, setEdges, getNode, getNodes } = useReactFlow();
+  const isOnboarding = data.variant === 'onboarding';
 
   // Sync local state when data changes externally (e.g., language toggle)
   useEffect(() => {
@@ -18,9 +34,15 @@ const CustomNode = ({ id, data }: NodeProps) => {
     setEditDesc(data.description || '');
   }, [data.label, data.description]);
 
-  const hasContent = (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
+  const hasContent = !isOnboarding && (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
   const description = data.description || '';
   const isLongDescription = description.length > 50;
+  const canExpand = !isOnboarding && (isLongDescription || hasContent);
+  const NodeTypeIcon = data.type === 'decision'
+    ? GitFork
+    : data.type === 'start'
+      ? Play
+      : Route;
 
   const handleAIComplete = async () => {
     if (!editLabel) return;
@@ -71,136 +93,273 @@ const CustomNode = ({ id, data }: NodeProps) => {
     setIsEditing(false);
   };
 
+  const isFlowLayout = data.layoutDirection === 'TB';
+  const addDirections = isFlowLayout
+    ? (['top', 'bottom'] as const)
+    : (['left', 'right'] as const);
+  const targetHandlePosition = isFlowLayout ? Position.Top : Position.Left;
+  const sourceHandlePosition = isFlowLayout ? Position.Bottom : Position.Right;
+
+  const handleAddAdjacentNode = (direction: 'left' | 'right' | 'top' | 'bottom') => {
+    const sourceNode = getNode(id);
+    if (!sourceNode) return;
+
+    const NODE_W = 460;
+    const NODE_H = 230;
+    const newNodeId = Math.random().toString(36).slice(2, 11);
+    const offset = {
+      left: { x: -NODE_W, y: 0 },
+      right: { x: NODE_W, y: 0 },
+      top: { x: 0, y: -NODE_H },
+      bottom: { x: 0, y: NODE_H },
+    }[direction];
+    const isOutgoing = direction === 'right' || direction === 'bottom';
+
+    const targetPos = {
+      x: sourceNode.position.x + offset.x,
+      y: sourceNode.position.y + offset.y,
+    };
+
+    // 收集需要被推开的已有节点 —— 沿着 direction 方向递归扩散，
+    // 这样 A → B 已存在时，从 A 新增节点，B 及 B 之后的链路会一起被推开
+    const allNodes = getNodes();
+    const axis: 'x' | 'y' = direction === 'left' || direction === 'right' ? 'x' : 'y';
+    const sign = direction === 'right' || direction === 'bottom' ? 1 : -1;
+    const shift = axis === 'x' ? NODE_W : NODE_H;
+
+    const overlap = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.abs(a.x - b.x) < NODE_W && Math.abs(a.y - b.y) < NODE_H;
+
+    const pushedPositions = new Map<string, { x: number; y: number }>();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const node of allNodes) {
+        if (node.id === id || pushedPositions.has(node.id)) continue;
+        // 1) 与新节点（targetPos）重叠？
+        let needPush = overlap(node.position, targetPos);
+        // 2) 与某个已计划被推开节点（取它推开后的位置）重叠？
+        if (!needPush) {
+          for (const pushedPos of pushedPositions.values()) {
+            if (overlap(node.position, pushedPos)) {
+              needPush = true;
+              break;
+            }
+          }
+        }
+        if (needPush) {
+          pushedPositions.set(node.id, {
+            x: axis === 'x' ? node.position.x + sign * shift : node.position.x,
+            y: axis === 'y' ? node.position.y + sign * shift : node.position.y,
+          });
+          changed = true;
+        }
+      }
+    }
+
+    const newNode = {
+      id: newNodeId,
+      type: 'custom',
+      position: targetPos,
+      data: {
+        label: '新步骤',
+        label_zh: '新步骤',
+        label_en: 'New Step',
+        description: '双击开始编辑...',
+        description_zh: '双击开始编辑...',
+        description_en: 'Double click to edit...',
+        type: 'action',
+        layoutDirection: data.layoutDirection || 'LR',
+      },
+    };
+
+    setNodes((nodes) =>
+      nodes
+        .map((n) => {
+          const newPos = pushedPositions.get(n.id);
+          return newPos ? { ...n, position: newPos } : n;
+        })
+        .concat(newNode),
+    );
+    setEdges((edges) => edges.concat({
+      id: isOutgoing ? `${id}-${newNodeId}` : `${newNodeId}-${id}`,
+      source: isOutgoing ? id : newNodeId,
+      target: isOutgoing ? newNodeId : id,
+      animated: false,
+      style: { stroke: '#5a5a5a', strokeWidth: 1 },
+    }));
+  };
+
   return (
-    <div className="px-3 py-2 shadow-sm rounded bg-stone-800 border border-stone-700 min-w-[180px] max-w-[260px] transition-all group">
-      <div className="flex items-start">
-        <div className="rounded-full w-6 h-6 flex justify-center items-center bg-stone-700 text-stone-300 flex-shrink-0 mt-0.5">
-          {data.type === 'decision' ? (
-            <AlertTriangle size={12} />
-          ) : (
-            <FileText size={12} />
-          )}
-        </div>
-        <div className="ml-2 flex-1 min-w-0">
-          {isEditing ? (
-            <div className="space-y-2 mt-1">
-              <input
-                autoFocus
-                className="w-full bg-stone-900 border border-stone-600 rounded px-2 py-1 type-sm text-stone-200 focus:outline-none focus:border-indigo-500"
-                value={editLabel}
-                onChange={(e) => setEditLabel(e.target.value)}
-                placeholder="Step Name"
-              />
-              <div className="relative">
-                <textarea
-                  className="w-full bg-stone-900 border border-stone-600 rounded px-2 py-1 type-sm text-stone-200 focus:outline-none focus:border-indigo-500 resize-none h-20 pr-8"
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
-                  placeholder="Description"
-                />
-                <button
-                  onClick={handleAIComplete}
-                  disabled={!editLabel || isGenerating}
-                  className="absolute bottom-2 right-2 p-1.5 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="AI Auto-complete"
-                >
-                  {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                </button>
-              </div>
-              <div className="flex justify-end gap-1">
-                <button onClick={handleCancel} className="p-1 text-stone-400 hover:text-stone-200 hover:bg-stone-700 rounded">
-                  <X size={14} />
-                </button>
-                <button onClick={handleSave} className="p-1 text-emerald-400 hover:text-emerald-300 hover:bg-stone-700 rounded">
-                  <Check size={14} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-start justify-between gap-2">
-                <div className="type-base font-bold text-stone-200 break-words">{data.label}</div>
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-stone-500 hover:text-stone-300 transition-opacity"
-                >
-                  <Edit2 size={12} />
-                </button>
-              </div>
-              
-              <div className={`type-sm text-stone-500 leading-tight mt-1 ${!expanded && isLongDescription ? 'line-clamp-2' : ''}`}>
-                {description}
-              </div>
-              
-              {(isLongDescription || hasContent) && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setExpanded(!expanded);
-                  }}
-                  className="text-[10px] text-stone-400 hover:text-stone-200 mt-1 flex items-center gap-1 cursor-pointer"
-                >
-                  {expanded ? (
-                    <>
-                      收起 <ChevronUp size={10} />
-                    </>
-                  ) : (
-                    <>
-                      查看全部 <ChevronDown size={10} />
-                    </>
-                  )}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {expanded && hasContent && !isEditing && (
-        <div className="mt-2 border-t border-stone-700 pt-2 animate-in fade-in duration-200">
-          {data.edgeCases?.length > 0 && (
-            <div className="mb-2">
-              <div className="type-sm font-semibold text-amber-500 flex items-center mb-0.5">
-                <AlertTriangle size={8} className="mr-1" /> Edge Cases
-              </div>
-              <ul className="list-disc list-inside type-sm text-stone-400 pl-1">
-                {data.edgeCases.map((ec: string, i: number) => (
-                  <li key={i} className="break-words">{ec}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {data.checklist?.length > 0 && (
-            <div className="mb-2">
-              <div className="type-sm font-semibold text-emerald-500 flex items-center mb-0.5">
-                <CheckCircle2 size={8} className="mr-1" /> Checklist
-              </div>
-              <ul className="list-disc list-inside type-sm text-stone-400 pl-1">
-                {data.checklist.map((c: string, i: number) => (
-                  <li key={i} className="break-words">{c}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {data.questions?.length > 0 && (
-            <div>
-              <div className="type-sm font-semibold text-blue-400 flex items-center mb-0.5">
-                <HelpCircle size={8} className="mr-1" /> Robustness Questions
-              </div>
-              <ul className="list-disc list-inside type-sm text-stone-400 pl-1">
-                {data.questions.map((q: string, i: number) => (
-                  <li key={i} className="break-words">{q}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+    <div className={isOnboarding ? 'tap-node-shell tap-node-shell--onboarding group' : 'tap-node-shell min-w-[360px] max-w-[520px] group'}>
+      {!isEditing && !isOnboarding && (
+        <>
+          {addDirections.map((direction) => (
+            <button
+              key={direction}
+              type="button"
+              aria-label={`在${direction}添加节点`}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleAddAdjacentNode(direction);
+              }}
+              className={`nodrag nopan tap-node-add-zone tap-node-add-zone-${direction}`}
+            >
+              <span className="tap-node-add-button">
+                <Plus size={27} strokeWidth={2.1} />
+              </span>
+            </button>
+          ))}
+        </>
       )}
+      <div className={`${selected ? 'tap-node-card tap-node-card--selected' : 'tap-node-card'}${isOnboarding ? ' tap-node-card--onboarding' : ''}`}>
+        <div className="tap-node-header">
+          {!isEditing && (
+            <div className="tap-node-type-icon">
+              <NodeTypeIcon size={25} strokeWidth={1.8} />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            {isEditing ? (
+              <div className="tap-node-edit-form">
+                <input
+                  autoFocus
+                  className="glass-input tap-node-edit-input"
+                  value={editLabel}
+                  onChange={(e) => setEditLabel(e.target.value)}
+                  placeholder="Step Name"
+                />
+                <div className="tap-node-edit-textarea-wrap">
+                  <textarea
+                    className="glass-input tap-node-edit-textarea"
+                    value={editDesc}
+                    onChange={(e) => setEditDesc(e.target.value)}
+                    placeholder="Description"
+                  />
+                  <button
+                    onClick={handleAIComplete}
+                    disabled={!editLabel || isGenerating}
+                    className="tap-node-ai-btn"
+                    title="AI Auto-complete"
+                  >
+                    {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  </button>
+                </div>
+                <div className="tap-node-edit-actions">
+                  <button
+                    onClick={handleCancel}
+                    className="tap-node-action-btn tap-node-action-btn--cancel"
+                    title="Cancel"
+                  >
+                    <X size={14} />
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="tap-node-action-btn tap-node-action-btn--save"
+                    title="Save"
+                  >
+                    <Check size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                role={canExpand ? 'button' : undefined}
+                tabIndex={canExpand ? 0 : undefined}
+                onClick={() => {
+                  if (canExpand) setExpanded((current) => !current);
+                }}
+                onKeyDown={(e) => {
+                  if (!canExpand) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setExpanded((current) => !current);
+                  }
+                }}
+                className={canExpand ? 'cursor-pointer' : ''}
+              >
+                {isOnboarding && data.onboardingStep && (
+                  <div className="tap-node-onboarding-step">{data.onboardingStep}</div>
+                )}
+                <div className="tap-node-title-row">
+                  <div className="tap-node-title">{data.label}</div>
+                  {!isOnboarding && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                      }}
+                      className="tap-node-edit-btn"
+                      title="Edit"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                  )}
+                </div>
 
-      <Handle type="target" position={Position.Top} className="w-12 !bg-stone-600" />
-      <Handle type="source" position={Position.Bottom} className="w-12 !bg-stone-600" />
+                <div className={`tap-node-description ${!expanded && isLongDescription ? 'tap-node-description--clamped' : ''}`}>
+                  {description}
+                </div>
+
+                {canExpand && (
+                  <div className="tap-node-toggle">
+                    {expanded ? '收起' : '展开'}
+                    {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {expanded && hasContent && !isEditing && (
+          <div className="tap-node-detail animate-in fade-in duration-200">
+            {data.edgeCases?.length > 0 && (
+              <div className="tap-node-section">
+                <div className="tap-node-section-title tap-node-section-title--warn">
+                  <AlertTriangle size={16} className="mr-2" /> Edge Cases
+                </div>
+                <ul className="tap-node-section-list tap-node-section-list--warn">
+                  {data.edgeCases.map((ec: string, i: number) => (
+                    <li key={i} className="break-words">{ec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {data.checklist?.length > 0 && (
+              <div className="tap-node-section">
+                <div className="tap-node-section-title tap-node-section-title--check">
+                  <CheckCircle2 size={14} className="mr-2" /> Checklist
+                </div>
+                <ul className="tap-node-section-list tap-node-section-list--check">
+                  {data.checklist.map((c: string, i: number) => (
+                    <li key={i} className="break-words">{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {data.questions?.length > 0 && (
+              <div className="tap-node-section">
+                <div className="tap-node-section-title tap-node-section-title--question">
+                  <HelpCircle size={14} className="mr-2" /> Robustness Questions
+                </div>
+                <ul className="tap-node-section-list tap-node-section-list--question">
+                  {data.questions.map((q: string, i: number) => (
+                    <li key={i} className="break-words">{q}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+      {/* 仅一对隐形 handle，挂在中央。具体进出位置（35/65、30/50/70 等）由 LabeledEdge
+          根据该侧 edge 数量动态偏移端点完成 —— 这样无需为不同数量的连线创建多组 handle。 */}
+      <Handle id="t" type="target" position={targetHandlePosition} className="tap-node-handle" />
+      <Handle id="s" type="source" position={sourceHandlePosition} className="tap-node-handle" />
     </div>
   );
 };

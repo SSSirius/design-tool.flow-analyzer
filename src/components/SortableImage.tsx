@@ -30,7 +30,7 @@ export function SortableImage({ id, src, onRemove }: SortableImageProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group bg-stone-800 rounded-lg overflow-hidden border border-stone-700 aspect-square"
+      className="glass-card relative group rounded-lg overflow-hidden aspect-square"
     >
       <img src={src} alt="Upload" className="w-full h-full object-cover" />
       
@@ -38,7 +38,7 @@ export function SortableImage({ id, src, onRemove }: SortableImageProps) {
       <div 
         {...attributes} 
         {...listeners}
-        className="absolute top-1 left-1 p-1 bg-black/50 rounded text-white opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity"
+        className="absolute top-1 left-1 p-1 bg-black/35 backdrop-blur-md rounded-md text-white opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity"
       >
         <GripVertical size={14} />
       </div>
@@ -49,7 +49,7 @@ export function SortableImage({ id, src, onRemove }: SortableImageProps) {
           e.stopPropagation();
           onRemove(id);
         }}
-        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-1 right-1 p-1 bg-red-500/70 hover:bg-red-500 rounded-md text-white opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <X size={14} />
       </button>
