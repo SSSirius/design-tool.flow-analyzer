@@ -18,15 +18,14 @@ import {
 } from 'lucide-react';
 import { generateNodeDetails } from '../services/ai';
 
-const CustomNode = ({ id, data, selected }: NodeProps) => {
-  const [expanded, setExpanded] = useState(Boolean(data.defaultExpanded));
+const CustomNode = ({ id, data }: NodeProps) => {
+  const [expanded, setExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(data.label || '');
   const [editDesc, setEditDesc] = useState(data.description || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [enhancedData, setEnhancedData] = useState<any>(null);
   const { setNodes, setEdges, getNode, getNodes } = useReactFlow();
-  const isOnboarding = data.variant === 'onboarding';
 
   // Sync local state when data changes externally (e.g., language toggle)
   useEffect(() => {
@@ -34,10 +33,10 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
     setEditDesc(data.description || '');
   }, [data.label, data.description]);
 
-  const hasContent = !isOnboarding && (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
+  const hasContent = (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
   const description = data.description || '';
   const isLongDescription = description.length > 50;
-  const canExpand = !isOnboarding && (isLongDescription || hasContent);
+  const canExpand = isLongDescription || hasContent;
   const NodeTypeIcon = data.type === 'decision'
     ? GitFork
     : data.type === 'start'
@@ -191,8 +190,8 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
   };
 
   return (
-    <div className={isOnboarding ? 'tap-node-shell tap-node-shell--onboarding group' : 'tap-node-shell min-w-[360px] max-w-[520px] group'}>
-      {!isEditing && !isOnboarding && (
+    <div className="tap-node-shell min-w-[360px] max-w-[520px] group">
+      {!isEditing && (
         <>
           {addDirections.map((direction) => (
             <button
@@ -212,7 +211,7 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
           ))}
         </>
       )}
-      <div className={`${selected ? 'tap-node-card tap-node-card--selected' : 'tap-node-card'}${isOnboarding ? ' tap-node-card--onboarding' : ''}`}>
+      <div className="tap-node-card">
         <div className="tap-node-header">
           {!isEditing && (
             <div className="tap-node-type-icon">
@@ -278,23 +277,18 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
                 }}
                 className={canExpand ? 'cursor-pointer' : ''}
               >
-                {isOnboarding && data.onboardingStep && (
-                  <div className="tap-node-onboarding-step">{data.onboardingStep}</div>
-                )}
                 <div className="tap-node-title-row">
                   <div className="tap-node-title">{data.label}</div>
-                  {!isOnboarding && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditing(true);
-                      }}
-                      className="tap-node-edit-btn"
-                      title="Edit"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                    }}
+                    className="tap-node-edit-btn"
+                    title="Edit"
+                  >
+                    <Edit2 size={18} />
+                  </button>
                 </div>
 
                 <div className={`tap-node-description ${!expanded && isLongDescription ? 'tap-node-description--clamped' : ''}`}>

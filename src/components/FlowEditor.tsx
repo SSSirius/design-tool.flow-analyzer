@@ -119,28 +119,24 @@ export default function FlowEditor({
           offsetScale={1}
           style={{ width: 248, height: 160, right: 1, bottom: 76 }}
         />
-        <div className="flow-minimap-toolbar nodrag nopan nowheel">
+        <div className="flow-minimap-toolbar nodrag nopan nowheel absolute bottom-4 right-4 z-20 flex h-12 w-[248px] items-center justify-between gap-2 rounded-[16px] border border-[#303030] bg-[#202020] px-3 shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
 
           <button
             type="button"
             onClick={handleResetView}
-            className="flow-toolbar-btn flow-toolbar-btn--momentary"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-white transition-colors hover:bg-[#2a2a2a] active:bg-[#111111]"
             title="重置居中"
-            aria-label="重置居中"
           >
             <Focus size={19} strokeWidth={2.1} />
-            <span className="flow-toolbar-tooltip">重置居中</span>
           </button>
           <button
             type="button"
             onClick={() => setIsLocked((locked) => !locked)}
-            className={isLocked ? 'flow-toolbar-btn flow-toolbar-btn--active' : 'flow-toolbar-btn'}
+            className={`flex h-9 w-9 items-center justify-center rounded-xl text-white transition-colors hover:bg-[#2a2a2a] ${isLocked ? 'bg-[#111111]' : ''
+              }`}
             title={isLocked ? '解锁编辑' : '锁定编辑'}
-            aria-label={isLocked ? '解锁编辑' : '锁定编辑'}
-            aria-pressed={isLocked}
           >
             {isLocked ? <Lock size={18} strokeWidth={2.1} /> : <Unlock size={18} strokeWidth={2.1} />}
-            <span className="flow-toolbar-tooltip">{isLocked ? '已锁定，点击解锁' : '锁定节点编辑'}</span>
           </button>
           <div className="zoom-slider-group group relative flex flex-1 items-center">
             <input
@@ -154,8 +150,8 @@ export default function FlowEditor({
               style={{ '--zoom-progress': `${zoomProgress}%` } as CSSProperties}
               onChange={(event) => handleSliderChange(Number(event.target.value))}
             />
-            <div className="zoom-slider-tooltip">
-              放大/缩小画布 · {formatZoomLabel(zoomFraction)}
+            <div className="zoom-slider-tooltip pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 whitespace-nowrap rounded-[16px] bg-[#2b2b2b] px-5 py-3 type-sm font-semibold text-white opacity-0 shadow-[0_12px_28px_rgba(0,0,0,0.34)] transition-opacity group-hover:opacity-100">
+              放大/缩小画布
             </div>
           </div>
           <span className="w-12 text-right font-mono type-xs text-[#d0d0d0]">{formatZoomLabel(zoomFraction)}</span>

@@ -18,10 +18,6 @@ export interface FlowNodeData {
   checklist_en?: string[];
   questions_zh?: string[];
   questions_en?: string[];
-  defaultExpanded?: boolean;
-  layoutDirection?: 'LR' | 'TB';
-  variant?: 'onboarding';
-  onboardingStep?: string;
 }
 
 export interface ComponentData {

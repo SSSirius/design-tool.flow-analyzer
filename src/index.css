@@ -10,32 +10,13 @@
 :root {
   --bg: #0b0b0b;
   --ink: #f2f3f5;
-  --ink-muted: #9096a3;
-  --ink-subtle: #777d89;
-  --ink-soft: #ababab;
   --line: #282828;
-  --line-soft: #242424;
-  --line-strong: #3a3a3a;
   --panel-bg: #121212;
-  --surface-elevated: #1a1a1a;
-  --surface-section: #1f1f1f;
-  --surface-control: #202020;
-  --surface-control-hover: #2a2a2a;
-  --surface-control-active: #111111;
   --glass-bg: #1e1e1e;
   --glass-bg-strong: #242424;
   --glass-line: #303030;
   --glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
   --glass-radius: 16px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 18px;
-  --shadow-popover: 0 24px 64px rgba(0, 0, 0, 0.55);
-  --shadow-control: 0 14px 34px rgba(0, 0, 0, 0.32);
-  --status-success: #10b981;
-  --status-warning: #d7ad68;
-  --status-danger: #ef4444;
   
   /* ==========================================================
      Typography Tokens - 全局字号系统（4 个 size）
@@ -78,7 +59,7 @@
 body {
   font-family: var(--font-sans);
   min-height: 100vh;
-  background: var(--bg);
+  background: #0b0b0b;
   color: var(--ink);
   font-size: var(--text-sm);
   overflow: hidden;
@@ -97,14 +78,14 @@ body::before {
 @layer components {
   .glass-panel {
     background: var(--panel-bg);
-    border: 1px solid var(--line-soft);
+    border: 1px solid #242424;
     box-shadow: var(--glass-shadow);
   }
 
   .glass-popover {
     isolation: isolate;
-    background: var(--surface-elevated);
-    border: 1px solid var(--line-strong);
+    background: #1a1a1a;
+    border: 1px solid #3a3a3a;
     box-shadow: 0 18px 48px rgba(0,0,0,0.44);
   }
 
@@ -115,8 +96,8 @@ body::before {
   }
 
   .glass-input {
-    background: var(--surface-control-active);
-    border: 1px solid var(--glass-line);
+    background: #101010;
+    border: 1px solid #2f2f2f;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   }
 
@@ -126,13 +107,13 @@ body::before {
   }
 
   .glass-button {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-line);
+    background: #1d1d1d;
+    border: 1px solid #303030;
     box-shadow: 0 8px 22px rgba(0,0,0,0.2);
   }
 
   .glass-button:hover {
-    background: var(--glass-bg-strong);
+    background: #252525;
     border-color: #454545;
   }
 
@@ -173,10 +154,10 @@ body::before {
   max-height: calc(100vh - var(--ai-anchor-bottom, 64px) - 24px);
   display: flex;
   flex-direction: column;
-  background: var(--surface-elevated);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-popover);
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   height: 70%;
   animation: ai-modal-in 0.2s ease-out;
@@ -193,13 +174,13 @@ body::before {
   justify-content: space-between;
   gap: 16px;
   padding: 16px 16px 12px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid #2a2a2a;
 }
 
 .ai-settings-title {
   font-size: var(--text-md);
   font-weight: 600;
-  color: var(--ink);
+  color: #f2f3f5;
   letter-spacing: -0.01em;
 }
 
@@ -207,7 +188,7 @@ body::before {
   margin-top: 4px;
   font-size: var(--text-xs);
   line-height: var(--leading-snug);
-  color: var(--ink-subtle);
+  color: #777d89;
 }
 
 .ai-settings-close {
@@ -218,14 +199,14 @@ body::before {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  color: var(--ink-muted);
+  color: #9096a3;
   background: transparent;
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .ai-settings-close:hover {
   color: #ffffff;
-  background: var(--surface-control-hover);
+  background: #2a2a2a;
 }
 
 .ai-settings-body {
@@ -234,13 +215,13 @@ body::before {
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .ai-settings-footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--line);
-  background: var(--panel-bg);
+  border-top: 1px solid #2a2a2a;
+  background: #161616;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -280,33 +261,6 @@ body::before {
   z-index: 102; /* 高于内部 overlay (100) */
 }
 
-.ai-settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--glass-line);
-  border-radius: var(--radius-md);
-  background: var(--surface-section);
-}
-
-.ai-settings-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #d8d8d8;
-  font-size: var(--text-sm);
-  font-weight: 700;
-}
-
-.ai-settings-section-title::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--ink-subtle);
-}
-
 .ai-field {
   display: block;
 }
@@ -316,7 +270,7 @@ body::before {
   margin-bottom: 6px;
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--ink-muted);
+  color: #9096a3;
 }
 
 .ai-field-input {
@@ -333,29 +287,6 @@ body::before {
   color: #626874;
 }
 
-.ai-model-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin-top: 7px;
-  font-size: var(--text-xs);
-  line-height: var(--leading-snug);
-  color: var(--ink-muted);
-}
-
-.ai-model-note svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.ai-model-note--ok {
-  color: #8bcaa2;
-}
-
-.ai-model-note--warn {
-  color: var(--status-warning);
-}
-
 .ai-test-btn {
   display: flex;
   width: 100%;
@@ -364,8 +295,8 @@ body::before {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid #4a4a4a;
-  background: var(--glass-line);
-  border-radius: var(--radius-sm);
+  background: #303030;
+  border-radius: 8px;
   font-size: var(--text-sm);
   font-weight: 600;
   color: #f0f0f0;
@@ -374,7 +305,7 @@ body::before {
 
 .ai-test-btn:hover:not(:disabled) {
   border-color: #6a6a6a;
-  background: var(--line-strong);
+  background: #3a3a3a;
 }
 
 .ai-test-btn:disabled {
@@ -763,59 +694,11 @@ body::before {
 
 /* 卡片容器 */
 .tap-node-card {
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--line-strong);
-  background: var(--surface-control);
+  border-radius: 18px;
+  border: 1px solid #3a3a3a;
+  background: #202020;
   padding: 20px;
   box-shadow: 0 16px 46px rgba(0, 0, 0, 0.34);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
-}
-
-.tap-node-card--selected {
-  border-color: var(--ink);
-  background: var(--glass-bg-strong);
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.12),
-    0 18px 52px rgba(0, 0, 0, 0.42);
-}
-
-.tap-node-shell--onboarding {
-  width: 360px;
-}
-
-.tap-node-card--onboarding {
-  min-height: 168px;
-  padding: 22px;
-  background: #1f1f1f;
-}
-
-.tap-node-card--onboarding .tap-node-header {
-  align-items: flex-start;
-}
-
-.tap-node-card--onboarding .tap-node-type-icon {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--glass-line);
-  background: #252525;
-}
-
-.tap-node-onboarding-step {
-  margin-bottom: 10px;
-  color: #8a8a8a;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 600;
-}
-
-.tap-node-card--onboarding .tap-node-title {
-  font-size: var(--text-lg);
-}
-
-.tap-node-card--onboarding .tap-node-description {
-  margin-top: 12px;
-  color: #b8b8b8;
-  line-height: var(--leading-normal);
 }
 
 /* 卡片头部：左侧类型图标 + 右侧标题/编辑按钮 */
@@ -1079,9 +962,9 @@ body::before {
 }
 
 .react-flow__minimap {
-  background: var(--panel-bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  background: #161616;
+  border: 1px solid #2b2b2b;
+  border-radius: 14px;
   overflow: hidden;
   cursor: grab;
   box-shadow: 0 12px 34px rgba(0,0,0,0.28);
@@ -1097,81 +980,6 @@ body::before {
 
 .react-flow__minimap-mask {
   stroke-linejoin: round;
-}
-
-.flow-minimap-toolbar {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 20;
-  display: flex;
-  width: 248px;
-  height: 48px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--glass-line);
-  border-radius: var(--radius-lg);
-  background: var(--surface-control);
-  box-shadow: var(--shadow-control);
-}
-
-.flow-toolbar-btn {
-  position: relative;
-  display: flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  color: var(--ink);
-  background: transparent;
-  transition: background-color 0.14s ease, color 0.14s ease, transform 0.14s ease;
-}
-
-.flow-toolbar-btn:hover {
-  background: var(--surface-control-hover);
-}
-
-.flow-toolbar-btn:active,
-.flow-toolbar-btn--momentary:active {
-  transform: scale(0.96);
-  background: var(--surface-control-active);
-}
-
-.flow-toolbar-btn--active {
-  background: var(--surface-control-active);
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.flow-toolbar-tooltip,
-.zoom-slider-tooltip {
-  pointer-events: none;
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  z-index: 30;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  border-radius: 16px;
-  background: var(--surface-control-hover);
-  padding: 10px 14px;
-  color: #ffffff;
-  font-size: var(--text-sm);
-  font-weight: 650;
-  opacity: 0;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
-  transition: opacity 0.14s ease, transform 0.14s ease;
-}
-
-.flow-toolbar-btn:hover .flow-toolbar-tooltip,
-.flow-toolbar-btn:focus-visible .flow-toolbar-tooltip,
-.zoom-slider-group:hover .zoom-slider-tooltip,
-.zoom-slider-group:focus-within .zoom-slider-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-2px);
 }
 
 .flow-zoom-slider {
@@ -1199,7 +1007,7 @@ body::before {
   border-radius: 999px;
   background: #f3f3f3;
   border: 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.38);
+  
 }
 
 .flow-zoom-slider::-moz-range-track {

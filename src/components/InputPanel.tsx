@@ -1,12 +1,12 @@
 import { useState, useRef, useLayoutEffect, useEffect, ChangeEvent, DragEvent, ClipboardEvent, CSSProperties } from 'react';
-import { Upload, Play, Loader2, FileText, CheckSquare, ImagePlus, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Play, Loader2, FileText, CheckSquare, ImagePlus, Settings, ChevronDown, ChevronUp, Wifi, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableImage } from './SortableImage';
-import AiSettingsPanel from './AiSettingsPanel';
+import { Combobox } from './Combobox';
 import { AiSettings } from '../types';
-import { DEFAULT_AI_SETTINGS, getStoredAiSettings, storeAiSettings } from '../services/ai';
+import { DEFAULT_AI_SETTINGS, Z_AI_CODING_BASE_URL, getStoredAiSettings, storeAiSettings, testAiConnection } from '../services/ai';
 
 interface InputPanelProps {
   onAnalyze: (context: string, images: string[], settings: AiSettings) => void;
@@ -38,9 +38,18 @@ const TEXT = {
     dragHint: "拖拽图片调整顺序",
     aiSettings: "AI 设置",
     settingsToggle: "设置项",
+    providerLabel: "模型服务",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "输入你的 API Key",
+    baseUrlLabel: "接口地址",
+    baseUrlPlaceholder: "例如：https://api.openai.com/v1",
+    analysisModelLabel: "分析模型",
+    nodeModelLabel: "节点补全模型",
+    modelHint: "可调用主流模型接口，或直接输入自定义模型名。请注意需要用图片分析时，模型必须支持Image理解功能。",
     disconnected: "未接入 AI",
     connected: "AI 已连通",
     testing: "检测中...",
+    testConnection: "测试连接"
   },
   en: {
     title: "UX Flow Analyzer",
@@ -60,10 +69,40 @@ const TEXT = {
     dragHint: "Drag to reorder images",
     aiSettings: "AI Settings",
     settingsToggle: "Settings",
+    providerLabel: "Model Provider",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "Enter your API key",
+    baseUrlLabel: "Base URL",
+    baseUrlPlaceholder: "e.g. https://api.openai.com/v1",
+    analysisModelLabel: "Analysis Model",
+    nodeModelLabel: "Node Completion Model",
+    modelHint: "Calls to supported models. Custom model names are allowed. Please note that when using images, the model must support image understanding.",
     disconnected: "AI not connected",
     connected: "AI connected",
     testing: "Testing...",
+    testConnection: "Test Connection"
   }
+};
+
+const MODEL_OPTIONS_BY_PROVIDER: Record<AiSettings['provider'], string[]> = {
+  gemini: [
+    "auto",
+    "gemini-3.1-pro-preview",
+    "gemini-3-flash-preview",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-image",
+  ],
+  "z-ai-coding": [
+    "glm-5.1",
+    "glm-4.7",
+  ],
+  "openai-compatible": [
+    "gpt-4o",
+    "gpt-4o-mini",
+    "gpt-4.1",
+    "gpt-4.1-mini",
+  ],
 };
 
 export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPanelProps) {
@@ -193,6 +232,22 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
     });
   };
 
+  const handleProviderChange = (provider: AiSettings['provider']) => {
+    const isGemini = provider === 'gemini';
+    const isZAiCoding = provider === 'z-ai-coding';
+
+    updateAiSettings({
+      provider,
+      analysisModel: isGemini ? 'auto' : isZAiCoding ? 'glm-5.1' : 'gpt-4o-mini',
+      nodeModel: isGemini ? 'gemini-3-flash-preview' : isZAiCoding ? 'glm-5.1' : 'gpt-4o-mini',
+      baseUrl: isZAiCoding
+        ? Z_AI_CODING_BASE_URL
+        : isGemini
+          ? DEFAULT_AI_SETTINGS.baseUrl
+          : aiSettings.baseUrl || DEFAULT_AI_SETTINGS.baseUrl,
+    });
+  };
+
   const hasAiConfig = Boolean(
     aiSettings.apiKey.trim() &&
     aiSettings.analysisModel.trim() &&
@@ -210,6 +265,18 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
     : connectionStatus === 'testing'
       ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.55)]'
       : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.65)]';
+  const modelOptions = MODEL_OPTIONS_BY_PROVIDER[aiSettings.provider];
+
+  const handleTestConnection = async () => {
+    setConnectionStatus('testing');
+    try {
+      await testAiConnection(aiSettings);
+      setConnectionStatus('connected');
+    } catch (error: any) {
+      setConnectionStatus('disconnected');
+      alert(error.message || 'AI connection failed.');
+    }
+  };
 
   const handleSubmit = () => {
     if (!context.trim() && images.length === 0) return;
@@ -383,15 +450,105 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
           </button>
 
           {showAiSettings && (
-            <AiSettingsPanel
-              language={language}
-              settings={aiSettings}
-              connectionStatus={connectionStatus}
-              anchorStyle={anchorStyle}
-              onClose={() => setShowAiSettings(false)}
-              onUpdate={updateAiSettings}
-              onConnectionStatusChange={setConnectionStatus}
-            />
+            <div
+              className="ai-settings-overlay"
+              onClick={() => setShowAiSettings(false)}
+            >
+              <div
+                className="ai-settings-modal"
+                style={anchorStyle}
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+              >
+                <div className="ai-settings-header">
+                  <div>
+                    <h2 className="ai-settings-title">{t.aiSettings}</h2>
+                    <p className="ai-settings-hint">{t.modelHint}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAiSettings(false)}
+                    className="ai-settings-close"
+                    aria-label="Close"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="ai-settings-body">
+                  <div className="ai-field">
+                    <label className="ai-field-label">{t.providerLabel}</label>
+                    <Combobox
+                      value={aiSettings.provider}
+                      allowCustom={false}
+                      options={[
+                        { value: 'gemini', label: 'Gemini' },
+                        { value: 'z-ai-coding', label: 'Z.AI Coding Plan' },
+                        { value: 'openai-compatible', label: 'OpenAI Compatible' },
+                      ]}
+                      onChange={(v) => handleProviderChange(v as AiSettings['provider'])}
+                    />
+                  </div>
+
+                  {aiSettings.provider !== 'gemini' && (
+                    <div className="ai-field">
+                      <label className="ai-field-label">{t.baseUrlLabel}</label>
+                      <input
+                        className="ai-field-input glass-input"
+                        type="url"
+                        autoComplete="off"
+                        placeholder={t.baseUrlPlaceholder}
+                        value={aiSettings.baseUrl}
+                        onChange={(e) => updateAiSettings({ baseUrl: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="ai-field">
+                    <label className="ai-field-label">{t.apiKeyLabel}</label>
+                    <input
+                      className="ai-field-input glass-input"
+                      type="password"
+                      autoComplete="off"
+                      placeholder={t.apiKeyPlaceholder}
+                      value={aiSettings.apiKey}
+                      onChange={(e) => updateAiSettings({ apiKey: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="ai-field">
+                    <label className="ai-field-label">{t.analysisModelLabel}</label>
+                    <Combobox
+                      value={aiSettings.analysisModel}
+                      options={modelOptions}
+                      onChange={(value) => updateAiSettings({ analysisModel: value })}
+                    />
+                  </div>
+
+                  <div className="ai-field">
+                    <label className="ai-field-label">{t.nodeModelLabel}</label>
+                    <Combobox
+                      value={aiSettings.nodeModel}
+                      options={modelOptions.filter((model) => model !== 'auto')}
+                      onChange={(value) => updateAiSettings({ nodeModel: value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="ai-settings-footer">
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={connectionStatus === 'testing'}
+                    className="ai-test-btn"
+                  >
+                    {connectionStatus === 'testing' ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
+                    {t.testConnection}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
