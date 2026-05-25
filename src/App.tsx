@@ -27,7 +27,10 @@ const initialNodes: Node[] = [
       description_en: 'Connect AI in Settings, then upload UI screenshots or describe your flow context.',
       variant: 'onboarding',
       onboardingStep: '准备',
+      onboardingStep_zh: '准备',
+      onboardingStep_en: 'Setup',
       layoutDirection: 'LR',
+      uiLanguage: 'zh',
     },
   },
   {
@@ -44,7 +47,10 @@ const initialNodes: Node[] = [
       description_en: 'Turn pages, actions, and paths into inspectable flow nodes so the user journey is clear.',
       variant: 'onboarding',
       onboardingStep: '功能 01',
+      onboardingStep_zh: '功能 01',
+      onboardingStep_en: 'Feature 01',
       layoutDirection: 'LR',
+      uiLanguage: 'zh',
     },
   },
   {
@@ -61,7 +67,10 @@ const initialNodes: Node[] = [
       description_en: 'For each node, surface empty states, failure feedback, permission limits, loading breaks, and exception paths.',
       variant: 'onboarding',
       onboardingStep: '功能 02',
+      onboardingStep_zh: '功能 02',
+      onboardingStep_en: 'Feature 02',
       layoutDirection: 'LR',
+      uiLanguage: 'zh',
     },
   },
   {
@@ -78,7 +87,10 @@ const initialNodes: Node[] = [
       description_en: 'Convert design risks into actionable checklist items and robustness questions before review.',
       variant: 'onboarding',
       onboardingStep: '功能 03',
+      onboardingStep_zh: '功能 03',
+      onboardingStep_en: 'Feature 03',
       layoutDirection: 'LR',
+      uiLanguage: 'zh',
     },
   },
 ];
@@ -489,6 +501,8 @@ export default function App() {
           edgeCases: language === 'zh' ? (node.data.edgeCases_zh || node.data.edgeCases) : (node.data.edgeCases_en || node.data.edgeCases),
           checklist: language === 'zh' ? (node.data.checklist_zh || node.data.checklist) : (node.data.checklist_en || node.data.checklist),
           questions: language === 'zh' ? (node.data.questions_zh || node.data.questions) : (node.data.questions_en || node.data.questions),
+          onboardingStep: language === 'zh' ? (node.data.onboardingStep_zh || node.data.onboardingStep) : (node.data.onboardingStep_en || node.data.onboardingStep),
+          uiLanguage: language,
         }
       }))
     );
@@ -537,6 +551,7 @@ export default function App() {
           checklist: language === 'zh' ? (n.data.checklist_zh || n.data.checklist) : (n.data.checklist_en || n.data.checklist),
           questions: language === 'zh' ? (n.data.questions_zh || n.data.questions) : (n.data.questions_en || n.data.questions),
           layoutDirection: 'LR',
+          uiLanguage: language,
         }
       }));
 

@@ -26,6 +26,8 @@ const CustomNode = ({ id, data }: NodeProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [enhancedData, setEnhancedData] = useState<any>(null);
   const { setNodes, setEdges, getNode, getNodes } = useReactFlow();
+  const language = data.uiLanguage === 'en' ? 'en' : 'zh';
+  const isOnboarding = data.variant === 'onboarding';
 
   // Sync local state when data changes externally (e.g., language toggle)
   useEffect(() => {
@@ -36,12 +38,25 @@ const CustomNode = ({ id, data }: NodeProps) => {
   const hasContent = (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
   const description = data.description || '';
   const isLongDescription = description.length > 50;
-  const canExpand = isLongDescription || hasContent;
+  const canExpand = !isOnboarding && (isLongDescription || hasContent);
   const NodeTypeIcon = data.type === 'decision'
     ? GitFork
     : data.type === 'start'
       ? Play
       : Route;
+  const nodeAccent = data.type === 'decision' ? 'violet' : data.type === 'start' ? 'green' : 'cyan';
+  const nodeCode = isOnboarding
+    ? data.onboardingStep || (language === 'zh' ? '引导' : 'Guide')
+    : data.type === 'decision'
+      ? 'CHK-002'
+      : data.type === 'start'
+        ? 'CORE-001'
+        : 'WRK-042';
+  const nodeStatus = isOnboarding
+    ? (language === 'zh' ? 'ACTIVE' : 'ACTIVE')
+    : canExpand
+      ? (expanded ? 'EXPANDED' : 'COLLAPSED')
+      : 'READY';
 
   const handleAIComplete = async () => {
     if (!editLabel) return;
@@ -191,7 +206,7 @@ const CustomNode = ({ id, data }: NodeProps) => {
 
   return (
     <div className="tap-node-shell min-w-[360px] max-w-[520px] group">
-      {!isEditing && (
+      {!isEditing && !isOnboarding && (
         <>
           {addDirections.map((direction) => (
             <button
@@ -211,7 +226,14 @@ const CustomNode = ({ id, data }: NodeProps) => {
           ))}
         </>
       )}
-      <div className="tap-node-card">
+      <div className={`tap-node-card tap-node-card--${nodeAccent}`}>
+        <div className="tap-node-meta-row">
+          <div className="tap-node-code">
+            <span className="tap-node-status-dot" />
+            <span>{nodeCode}</span>
+          </div>
+          <span className={`tap-node-status-chip tap-node-status-chip--${nodeAccent}`}>{nodeStatus}</span>
+        </div>
         <div className="tap-node-header">
           {!isEditing && (
             <div className="tap-node-type-icon">
@@ -297,7 +319,9 @@ const CustomNode = ({ id, data }: NodeProps) => {
 
                 {canExpand && (
                   <div className="tap-node-toggle">
-                    {expanded ? '收起' : '展开'}
+                    {expanded
+                      ? (language === 'zh' ? '收起' : 'Collapse')
+                      : (language === 'zh' ? '展开' : 'Expand')}
                     {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                   </div>
                 )}

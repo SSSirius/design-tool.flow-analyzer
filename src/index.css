@@ -59,7 +59,7 @@
 body {
   font-family: var(--font-sans);
   min-height: 100vh;
-  background: #0b0b0b;
+  background: #030303;
   color: var(--ink);
   font-size: var(--text-sm);
   overflow: hidden;
@@ -70,16 +70,19 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px);
-  background-size: 42px 42px;
-  opacity: 0.32;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 28px 28px, 112px 112px, 112px 112px;
+  opacity: 0.42;
 }
 
 @layer components {
   .glass-panel {
-    background: var(--panel-bg);
-    border: 1px solid #242424;
-    box-shadow: var(--glass-shadow);
+    background: rgba(8, 8, 8, 0.82);
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow: 0 22px 70px rgba(0,0,0,0.48);
   }
 
   .glass-popover {
@@ -90,9 +93,9 @@ body::before {
   }
 
   .glass-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-line);
-    box-shadow: 0 10px 34px rgba(0,0,0,0.28);
+    background: rgba(18, 18, 18, 0.9);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.38);
   }
 
   .glass-input {
@@ -694,15 +697,106 @@ body::before {
 
 /* 卡片容器 */
 .tap-node-card {
-  border-radius: 18px;
-  border: 1px solid #3a3a3a;
-  background: #202020;
-  padding: 20px;
-  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.34);
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(180deg, rgba(22, 22, 22, 0.96), rgba(13, 13, 13, 0.98));
+  padding: 18px 20px 20px;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.52);
+  overflow: hidden;
+}
+
+.tap-node-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent) top / 100% 1px no-repeat,
+    radial-gradient(circle at 12% 0%, rgba(255,255,255,0.05), transparent 34%);
+}
+
+.tap-node-card--violet {
+  border-color: rgba(193, 92, 255, 0.58);
+  box-shadow: 0 0 0 1px rgba(193, 92, 255, 0.10), 0 22px 54px rgba(0, 0, 0, 0.52);
+}
+
+.tap-node-card--green {
+  border-color: rgba(25, 221, 132, 0.45);
+}
+
+.tap-node-card--cyan {
+  border-color: rgba(14, 181, 232, 0.44);
+}
+
+.tap-node-meta-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1;
+  color: #8d8d8d;
+}
+
+.tap-node-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tap-node-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: #13d989;
+  box-shadow: 0 0 16px rgba(19, 217, 137, 0.36);
+}
+
+.tap-node-card--violet .tap-node-status-dot {
+  background: #bd55ff;
+  box-shadow: 0 0 18px rgba(189, 85, 255, 0.42);
+}
+
+.tap-node-card--cyan .tap-node-status-dot {
+  background: #0eb5e8;
+  box-shadow: 0 0 18px rgba(14, 181, 232, 0.38);
+}
+
+.tap-node-status-chip {
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #c7c7c7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tap-node-status-chip--green {
+  background: rgba(19, 217, 137, 0.13);
+  color: #16e38f;
+}
+
+.tap-node-status-chip--cyan {
+  background: rgba(14, 181, 232, 0.13);
+  color: #32bcff;
+}
+
+.tap-node-status-chip--violet {
+  background: rgba(189, 85, 255, 0.14);
+  color: #cb78ff;
 }
 
 /* 卡片头部：左侧类型图标 + 右侧标题/编辑按钮 */
 .tap-node-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   gap: 16px;
@@ -714,12 +808,12 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 12px;
-  /* background: #303030; */
-  /* border: 1px solid #4a4a4a; */
-  color: #d7d7d7;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.045);
+  color: #d6d6d6;
 }
 
 /* 标题与编辑按钮所在的一行 */
@@ -732,9 +826,9 @@ body::before {
 
 /* 节点标题文字 */
 .tap-node-title {
-  font-size: var(--text-lg);
+  font-size: 20px;
   line-height: var(--leading-tight);
-  font-weight: 600;
+  font-weight: 700;
   color: #f2f2f2;
   word-break: break-word;
 }
@@ -844,11 +938,11 @@ body::before {
 
 /* 描述文本 */
 .tap-node-description {
-  margin-top: 12px;
-  font-size: var(--text-md);
+  margin-top: 8px;
+  font-size: 15px;
   font-weight: 500;
   line-height: var(--leading-snug);
-  color: #a8a8a8;
+  color: #878787;
 }
 
 .tap-node-description--clamped {
@@ -866,12 +960,12 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid #4b4b4b;
-  background: #303030;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: var(--text-md);
-  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
   color: #d8d8d8;
 }
 
@@ -993,6 +1087,20 @@ body::before {
   outline: none;
 }
 
+.flow-minimap-toolbar {
+  border-color: rgba(255,255,255,0.12) !important;
+  background: rgba(28, 28, 28, 0.96) !important;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.52) !important;
+}
+
+.flow-minimap-toolbar button {
+  border-radius: 12px;
+}
+
+.flow-minimap-toolbar button:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
 .flow-zoom-slider::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
@@ -1111,8 +1219,8 @@ body::before {
   }
 
   .react-flow__edge-path {
-    stroke: rgba(255,255,255,0.34);
-    stroke-width: 1.15;
+    stroke: rgba(255,255,255,0.22);
+    stroke-width: 1.35;
   }
 
   .react-flow__edge.animated path {
@@ -1124,14 +1232,15 @@ body::before {
      用户一眼能看出箭头朝哪、流向何处（keyframes 提到外层避免 @layer 作用域问题） */  /* 节点上的隐形 handle —— 业务上不让用户看到圆点，
      真实的进出位置由 LabeledEdge 在端点处偏移完成 */
   .tap-node-handle {
-    width: 4px !important;
-    height: 4px !important;
+    width: 10px !important;
+    height: 10px !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    opacity: 0 !important;
+    border: 2px solid rgba(255, 255, 255, 0.24) !important;
+    background: #050505 !important;
+    opacity: 1 !important;
     pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.5);
   }
 
   /* 连线上的标注文字（如 "更新列表"）：自定义 edge 用 div 渲染，便于做空间偏移避免重叠 */
@@ -1139,15 +1248,16 @@ body::before {
     position: absolute;
     pointer-events: all;
     padding: 4px 10px;
-    background: #181818;
-    border: 1px solid #3a3a3a;
-    border-radius: 6px;
-    color: #f2f3f5;
-    font-size: var(--text-sm);
-    font-weight: 500;
+    background: rgba(14, 14, 14, 0.92);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 7px;
+    color: #c8c8c8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
     line-height: 1.2;
     white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
   }
 
   /* 旧 SVG label（手动连线时 React Flow 内置默认 edge 仍可能用到）的兜底 */
