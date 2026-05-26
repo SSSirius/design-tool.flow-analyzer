@@ -11,14 +11,11 @@ import {
   X,
   Sparkles,
   Loader2,
-  Play,
-  Route,
-  GitFork,
   Plus,
 } from 'lucide-react';
 import { generateNodeDetails } from '../services/ai';
 
-const CustomNode = ({ id, data }: NodeProps) => {
+const CustomNode = ({ id, data, selected }: NodeProps) => {
   const [expanded, setExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(data.label || '');
@@ -29,34 +26,48 @@ const CustomNode = ({ id, data }: NodeProps) => {
   const language = data.uiLanguage === 'en' ? 'en' : 'zh';
   const isOnboarding = data.variant === 'onboarding';
 
+  const hasContent = (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
+  const displayLabel = language === 'zh'
+    ? (data.label_zh || data.label || '')
+    : (data.label_en || data.label || '');
+  const description = language === 'zh'
+    ? (data.description_zh || data.description || '')
+    : (data.description_en || data.description || '');
+  const displayOnboardingStep = String(data.onboardingStep_en || data.onboardingStep || 'SETUP').toUpperCase();
+
   // Sync local state when data changes externally (e.g., language toggle)
   useEffect(() => {
-    setEditLabel(data.label || '');
-    setEditDesc(data.description || '');
-  }, [data.label, data.description]);
+    setEditLabel(displayLabel);
+    setEditDesc(description);
+  }, [displayLabel, description]);
 
-  const hasContent = (data.edgeCases?.length > 0 || data.checklist?.length > 0 || data.questions?.length > 0);
-  const description = data.description || '';
   const isLongDescription = description.length > 50;
   const canExpand = !isOnboarding && (isLongDescription || hasContent);
-  const NodeTypeIcon = data.type === 'decision'
-    ? GitFork
-    : data.type === 'start'
-      ? Play
-      : Route;
-  const nodeAccent = data.type === 'decision' ? 'violet' : data.type === 'start' ? 'green' : 'cyan';
+  const isManualNode = data.variant === 'manual';
+  const typeLabel = {
+    start: 'START',
+    decision: 'CHECK',
+    action: 'STEP',
+  }[data.type as 'start' | 'decision' | 'action'] || 'STEP';
   const nodeCode = isOnboarding
-    ? data.onboardingStep || (language === 'zh' ? '引导' : 'Guide')
-    : data.type === 'decision'
-      ? 'CHK-002'
-      : data.type === 'start'
-        ? 'CORE-001'
-        : 'WRK-042';
+    ? displayOnboardingStep
+    : isManualNode
+      ? 'MANUAL'
+      : typeLabel;
   const nodeStatus = isOnboarding
-    ? (language === 'zh' ? 'ACTIVE' : 'ACTIVE')
+    ? 'ACTIVE'
+    : isManualNode && !hasContent
+      ? 'DRAFT'
     : canExpand
-      ? (expanded ? 'EXPANDED' : 'COLLAPSED')
-      : 'READY';
+      ? (expanded ? 'EXPANDED' : 'EXPANDABLE')
+      : 'BASIC';
+  const statusTone = isOnboarding
+    ? 'green'
+    : data.type === 'decision'
+      ? 'amber'
+      : data.type === 'start'
+        ? 'green'
+        : 'cyan';
 
   const handleAIComplete = async () => {
     if (!editLabel) return;
@@ -76,6 +87,16 @@ const CustomNode = ({ id, data }: NodeProps) => {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === id) {
+          const localizedData = language === 'zh'
+            ? {
+              label_zh: editLabel,
+              description_zh: editDesc,
+            }
+            : {
+              label_en: editLabel,
+              description_en: editDesc,
+            };
+
           return {
             ...node,
             data: {
@@ -85,11 +106,7 @@ const CustomNode = ({ id, data }: NodeProps) => {
               edgeCases: enhancedData ? enhancedData.edgeCases : node.data.edgeCases,
               checklist: enhancedData ? enhancedData.checklist : node.data.checklist,
               questions: enhancedData ? enhancedData.questions : node.data.questions,
-              // Update the language-specific fields as well so toggling doesn't revert it
-              label_zh: editLabel,
-              label_en: editLabel,
-              description_zh: editDesc,
-              description_en: editDesc,
+              ...localizedData,
             },
           };
         }
@@ -101,8 +118,8 @@ const CustomNode = ({ id, data }: NodeProps) => {
   };
 
   const handleCancel = () => {
-    setEditLabel(data.label || '');
-    setEditDesc(data.description || '');
+    setEditLabel(displayLabel);
+    setEditDesc(description);
     setEnhancedData(null);
     setIsEditing(false);
   };
@@ -183,7 +200,9 @@ const CustomNode = ({ id, data }: NodeProps) => {
         description_zh: '双击开始编辑...',
         description_en: 'Double click to edit...',
         type: 'action',
+        variant: 'manual',
         layoutDirection: data.layoutDirection || 'LR',
+        uiLanguage: language,
       },
     };
 
@@ -205,7 +224,7 @@ const CustomNode = ({ id, data }: NodeProps) => {
   };
 
   return (
-    <div className="tap-node-shell min-w-[360px] max-w-[520px] group">
+    <div className="tap-node-shell group">
       {!isEditing && !isOnboarding && (
         <>
           {addDirections.map((direction) => (
@@ -226,20 +245,15 @@ const CustomNode = ({ id, data }: NodeProps) => {
           ))}
         </>
       )}
-      <div className={`tap-node-card tap-node-card--${nodeAccent}`}>
+      <div className={`tap-node-card tap-node-card--tone-${statusTone} ${selected ? 'tap-node-card--selected' : ''}`}>
         <div className="tap-node-meta-row">
           <div className="tap-node-code">
             <span className="tap-node-status-dot" />
             <span>{nodeCode}</span>
           </div>
-          <span className={`tap-node-status-chip tap-node-status-chip--${nodeAccent}`}>{nodeStatus}</span>
+          <span className={`tap-node-status-chip ds-chip ds-chip--${statusTone}`}>{nodeStatus}</span>
         </div>
         <div className="tap-node-header">
-          {!isEditing && (
-            <div className="tap-node-type-icon">
-              <NodeTypeIcon size={25} strokeWidth={1.8} />
-            </div>
-          )}
           <div className="flex-1 min-w-0">
             {isEditing ? (
               <div className="tap-node-edit-form">
@@ -248,14 +262,14 @@ const CustomNode = ({ id, data }: NodeProps) => {
                   className="glass-input tap-node-edit-input"
                   value={editLabel}
                   onChange={(e) => setEditLabel(e.target.value)}
-                  placeholder="Step Name"
+                  placeholder={language === 'zh' ? '节点名称' : 'Step name'}
                 />
                 <div className="tap-node-edit-textarea-wrap">
                   <textarea
                     className="glass-input tap-node-edit-textarea"
                     value={editDesc}
                     onChange={(e) => setEditDesc(e.target.value)}
-                    placeholder="Description"
+                    placeholder={language === 'zh' ? '节点描述' : 'Description'}
                   />
                   <button
                     onClick={handleAIComplete}
@@ -300,7 +314,7 @@ const CustomNode = ({ id, data }: NodeProps) => {
                 className={canExpand ? 'cursor-pointer' : ''}
               >
                 <div className="tap-node-title-row">
-                  <div className="tap-node-title">{data.label}</div>
+                  <div className="tap-node-title">{displayLabel}</div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

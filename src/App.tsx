@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState, addEdge, Connection, Node, Edge, useReactFlow } from 'reactflow';
 import InputPanel from './components/InputPanel';
 import FlowEditor from './components/FlowEditor';
@@ -152,33 +152,28 @@ const LoadingOverlay = ({ language }: { language: 'zh' | 'en' }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-black/55 backdrop-blur-2xl flex flex-col items-center justify-center"
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xl flex flex-col items-center justify-center"
     >
-      <div className="glass-panel w-full max-w-md rounded-xl p-8">
-        <div className="flex justify-center mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-white blur-xl opacity-10 rounded-md animate-pulse"></div>
-            <Loader2 size={48} className="text-[#d8d8d8] animate-spin relative z-10" />
-          </div>
+      <div className="loading-panel">
+        <div className="loading-panel-header">
+          <Loader2 size={34} className="loading-spinner" />
+          <span className="ds-chip ds-chip--neutral">
+            {language === 'zh' ? 'ANALYZING' : 'ANALYZING'}
+          </span>
         </div>
 
-        <div className="space-y-6">
+        <div className="loading-step-list">
           {steps.map((s, i) => {
             const Icon = s.icon;
             const isActive = i === step;
             const isCompleted = i < step;
 
             return (
-              <div key={i} className={`flex items-center gap-4 transition-all duration-500 ${isActive || isCompleted ? 'opacity-100' : 'opacity-30'}`}>
-                <div className={`w-8 h-8 rounded-md flex items-center justify-center border transition-colors duration-500 ${isActive ? 'bg-[#303030] border-[#5a5a5a] text-white' :
-                    isCompleted ? 'bg-[#2a2a2a] border-[#4a4a4a] text-[#d8d8d8]' :
-                      'bg-[#242424] border-[#303030] text-[#777777]'
-                  }`}>
-                  <Icon size={14} />
+              <div key={i} className={`loading-step ${isActive ? 'loading-step--active' : ''} ${isCompleted ? 'loading-step--done' : ''}`}>
+                <div className="loading-step-icon">
+                  <Icon size={15} />
                 </div>
-                <span className={`type-sm font-medium ${isActive ? 'text-stone-100' : 'text-stone-500'}`}>
-                  {s.text}
-                </span>
+                <span>{s.text}</span>
               </div>
             );
           })}
@@ -241,9 +236,15 @@ const FloatingActions = ({
       position,
       data: {
         label: language === 'zh' ? '新步骤' : 'New Step',
+        label_zh: '新步骤',
+        label_en: 'New Step',
         description: language === 'zh' ? '描述...' : 'Description...',
+        description_zh: '描述...',
+        description_en: 'Description...',
         type: 'action',
+        variant: 'manual',
         layoutDirection,
+        uiLanguage: language,
       },
     };
 
@@ -263,10 +264,10 @@ const FloatingActions = ({
   };
 
   return (
-    <div className="absolute top-4 right-4 flex gap-2">
+    <div className="floating-actions absolute top-0 right-0 flex gap-2">
       <button
         onClick={() => setLanguage((l: string) => l === 'zh' ? 'en' : 'zh')}
-        className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center"
+        className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
         title="Toggle Language"
       >
         <Languages size={14} className="mr-1.5" />
@@ -277,9 +278,9 @@ const FloatingActions = ({
       {flows.length > 0 && (
         <button
           onClick={() => setShowFlowList(true)}
-          className={`border shadow-sm px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center ${activeFlowId
-              ? 'bg-[#303030] border-[#565656] text-white hover:bg-[#3a3a3a]'
-              : 'glass-button text-[#d7d9df]'
+          className={`border shadow-sm px-3 py-1.5 rounded-md type-sm transition-all flex items-center ${activeFlowId
+            ? 'ui-active-surface hover:bg-[#3a3a3a]'
+            : 'glass-button text-[var(--text-primary)]'
             }`}
         >
           <GitBranch size={14} className="mr-1.5" />
@@ -290,7 +291,7 @@ const FloatingActions = ({
       {usabilityScores.length > 0 && (
         <button
           onClick={() => setShowUsabilityScorecard(true)}
-          className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center"
+          className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
         >
           <ClipboardCheck size={14} className="mr-1.5" />
           {language === 'zh' ? '可用性评分' : 'Scorecard'}
@@ -300,7 +301,7 @@ const FloatingActions = ({
       {usabilityScores.length === 0 && pageSuggestions.length > 0 && (
         <button
           onClick={() => setShowPageSuggestions(true)}
-          className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center"
+          className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
           title={language === 'zh' ? '至少需要的独立路由页面' : 'Minimum routed pages needed'}
         >
           <FileStack size={14} className="mr-1.5" />
@@ -311,7 +312,7 @@ const FloatingActions = ({
       {components.length > 0 && (
         <button
           onClick={() => setShowComponentList(true)}
-          className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center"
+          className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
         >
           <Layers size={14} className="mr-1.5" />
           {language === 'zh' ? '组件列表' : 'Components'}
@@ -320,7 +321,7 @@ const FloatingActions = ({
 
       <button
         onClick={() => onLayout('LR')}
-        className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center"
+        className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
         title={language === 'zh' ? '水平布局 (脑图)' : 'Horizontal Layout'}
       >
         <Share2 size={14} className="mr-1.5" />
@@ -329,7 +330,7 @@ const FloatingActions = ({
 
       <button
         onClick={() => onLayout('TB')}
-        className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all flex items-center"
+        className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
         title={language === 'zh' ? '垂直布局 (流程图)' : 'Vertical Layout'}
       >
         <Network size={14} className="mr-1.5" />
@@ -338,7 +339,7 @@ const FloatingActions = ({
 
       <button
         onClick={handleAddStep}
-        className="glass-button min-h-11 text-[#d7d9df] px-5 py-2 rounded-lg type-sm font-medium transition-all"
+        className="glass-button min-h-11 text-[var(--text-primary)] px-5 py-2 rounded-lg type-sm  transition-all"
       >
         + {language === 'zh' ? '添加步骤' : 'Add Step'}
       </button>
@@ -355,7 +356,7 @@ const FloatingActions = ({
           setActiveFlowId(null);
           setActiveComponentIndex(null);
         }}
-        className="glass-button text-[#d7d9df] px-3 py-1.5 rounded-md type-sm font-medium transition-all"
+        className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all"
       >
         {language === 'zh' ? '清空' : 'Clear'}
       </button>
@@ -367,9 +368,8 @@ const FloatingActions = ({
             ? (language === 'zh' ? '导出当前流程清单为 Markdown' : 'Export current checklist as Markdown')
             : (language === 'zh' ? '暂无可导出的清单内容' : 'No checklist content yet')
         }
-        className={`glass-primary px-3 py-1.5 rounded-md type-sm font-semibold flex items-center transition-all ${
-          hasContent ? '' : 'opacity-40 cursor-not-allowed'
-        }`}
+        className={`glass-primary px-3 py-1.5 rounded-md type-sm  flex items-center transition-all ${hasContent ? '' : 'opacity-40 cursor-not-allowed'
+          }`}
       >
         <Download size={14} className="mr-2" />
         {language === 'zh' ? '导出清单' : 'Export Checklist'}
@@ -401,6 +401,16 @@ export default function App() {
   const [activeComponentIndex, setActiveComponentIndex] = useState<number | null>(null);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
   const [layoutDirection, setLayoutDirection] = useState<'LR' | 'TB'>('LR');
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -412,20 +422,20 @@ export default function App() {
     const normalizedDirection = direction === 'TB' ? 'TB' : 'LR';
     setLayoutDirection(normalizedDirection);
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      nodes.map((node) => ({
+      nodesRef.current.map((node) => ({
         ...node,
         data: {
           ...node.data,
           layoutDirection: normalizedDirection,
         },
       })),
-      edges,
+      edgesRef.current,
       normalizedDirection
     );
 
-    setNodes([...layoutedNodes]);
-    setEdges([...layoutedEdges]);
-  }, [nodes, edges, setNodes, setEdges]);
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+  }, [setNodes, setEdges]);
 
   // Handle Flow / Component Focus —— 两种聚焦走同一套高亮/淡出逻辑。
   // 聚焦源来自：activeFlowId（按 flow 高亮 nodeIds 序列） 或
@@ -693,7 +703,7 @@ export default function App() {
           {(activeFlowId || activeComponentIndex !== null) && (() => {
             let label = '';
             let scopeText = '';
-            let onExit: () => void = () => {};
+            let onExit: () => void = () => { };
             if (activeFlowId) {
               const f = flows.find(x => x.id === activeFlowId);
               label = language === 'zh' ? '聚焦流程' : 'Focused Flow';
@@ -770,7 +780,7 @@ export default function App() {
                 </h3>
                 <button
                   onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
-                  className="p-1 hover:bg-[#242424] rounded-md text-[#9da3af] hover:text-white transition-colors"
+                  className="p-1 rounded-md ui-icon-button"
                 >
                   {isSummaryExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                 </button>

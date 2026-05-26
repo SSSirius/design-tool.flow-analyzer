@@ -87,10 +87,14 @@ const TEXT = {
 const MODEL_OPTIONS_BY_PROVIDER: Record<AiSettings['provider'], string[]> = {
   gemini: [
     "auto",
+    "gemini-3.5-flash",
     "gemini-3.1-pro-preview",
+    "gemini-3.1-flash-lite",
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
+    "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-flash-lite",
     "gemini-2.5-flash-image",
   ],
   "z-ai-coding": [
@@ -144,7 +148,7 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [showAiSettings]);
-  
+
   const t = TEXT[language];
 
   const sensors = useSensors(
@@ -167,7 +171,7 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
 
     files.forEach(file => {
       if (!file.type.startsWith('image/')) return;
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         newImages.push({
@@ -175,7 +179,7 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
           src: reader.result as string
         });
         processedCount++;
-        
+
         if (processedCount === files.length) {
           setImages(prev => [...prev, ...newImages]);
         }
@@ -285,273 +289,267 @@ export default function InputPanel({ onAnalyze, isAnalyzing, language }: InputPa
 
   return (
     <>
-      <div 
-        className="relative h-full flex flex-col bg-transparent p-4 overflow-y-auto text-[#d7d9df] outline-none"
+      <div
+        className="relative h-full flex flex-col bg-transparent p-4 overflow-y-auto text-[var(--text-primary)] outline-none"
         onPaste={handlePaste}
         tabIndex={0}
       >
         <div className="mb-6">
-          <h1 className="type-lg text-white mb-1">{t.title}</h1>
-          <p className="type-sm text-[#8a8a8a]">
+          <h1 className="type-lg text-white mb-2">{t.title}</h1>
+          <p className="type-sm ui-muted">
             {t.subtitle}
           </p>
         </div>
 
-      <div className="space-y-4 flex-1">
-        {/* Context Input */}
-        <div>
-          <label className="block type-sm font-semibold uppercase tracking-wider text-[#8a8a8a] mb-3">
-            {t.contextLabel}
-          </label>
-          <textarea
-            className="glass-input input-panel-context-input"
-            placeholder={t.contextPlaceholder}
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-          />
-        </div>
-
-        {/* Image Upload */}
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <label className="block type-sm font-semibold uppercase tracking-wider text-[#8a8a8a]">
-              {t.imageLabel}
+        <div className="space-y-4 flex-1">
+          {/* Context Input */}
+          <div>
+            <label className="block type-sm uppercase tracking-wider ui-muted mb-2">
+              {t.contextLabel}
             </label>
-            {images.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setImages([])}
-                className="input-panel-clear-btn"
-              >
-                {t.clear}
-              </button>
-            )}
-          </div>
-          
-          <div
-            className={`glass-card upload-dropzone ${images.length > 0 ? 'upload-dropzone--filled' : ''}`}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-          >
-            {images.length > 0 ? (
-              <DndContext 
-                sensors={sensors} 
-                collisionDetection={closestCenter} 
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext 
-                  items={images.map(img => img.id)} 
-                  strategy={rectSortingStrategy}
-                >
-                  <div className="upload-grid">
-                    {images.map((img) => (
-                      <SortableImage 
-                        key={img.id} 
-                        id={img.id} 
-                        src={img.src} 
-                        onRemove={handleRemoveImage} 
-                      />
-                    ))}
-                    
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="upload-add-tile"
-                    >
-                      <ImagePlus size={20} className="upload-add-tile-icon" />
-                      <span className="type-xs">{language === 'zh' ? '添加' : 'Add'}</span>
-                    </button>
-                  </div>
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <div
-                className="upload-empty"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="upload-icon-box">
-                  <Upload size={14} />
-                </div>
-                <p className="upload-empty-text">{t.uploadText}</p>
-              </div>
-            )}
-            
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
+            <textarea
+              className="glass-input input-panel-context-input"
+              placeholder={t.contextPlaceholder}
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
             />
           </div>
-          {images.length > 0 && (
-            <p className="type-xs text-[#676d78] text-center mt-2">
-              {t.dragHint}
-            </p>
-          )}
-        </div>
 
-        {/* Action Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleSubmit}
-          disabled={isAnalyzing || (!context && images.length === 0)}
-          className={`w-full py-3 rounded-lg flex items-center justify-center font-semibold type-sm transition-all cursor-pointer ${
-            isAnalyzing || (!context && images.length === 0)
-              ? 'bg-[#242424] text-[#6f6f6f] cursor-not-allowed border border-[#303030]'
-              : 'glass-primary hover:brightness-105'
-          }`}
-        >
-          {isAnalyzing ? (
-            <>
-              <Loader2 size={14} className="animate-spin mr-2" />
-              {t.analyzingBtn}
-            </>
-          ) : (
-            <>
-              <Play size={14} className="mr-2 fill-current" />
-              {t.analyzeBtn}
-            </>
-          )}
-        </motion.button>
-      </div>
+          {/* Image Upload */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block type-sm  uppercase tracking-wider ui-muted">
+                {t.imageLabel}
+              </label>
+              {images.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setImages([])}
+                  className="input-panel-clear-btn"
+                >
+                  {t.clear}
+                </button>
+              )}
+            </div>
 
-      {/* Footer Info */}
-      <div className="mt-6 pt-4 border-t border-[#303030]">
-        <div className="flex items-center type-sm text-[#777d89] mb-1">
-          <CheckSquare size={10} className="mr-2" />
-          <span>{t.footerEdge}</span>
-        </div>
-        <div className="flex items-center type-sm text-[#777d89]">
-          <FileText size={10} className="mr-2" />
-          <span>{t.footerCheck}</span>
-        </div>
-
-        <div
-          ref={settingsAnchorRef}
-          className={`glass-card relative mt-3 rounded-lg settings-anchor ${showAiSettings ? 'settings-anchor--raised' : ''}`}
-        >
-          <button
-            type="button"
-            onClick={() => setShowAiSettings((open) => !open)}
-            className="flex w-full items-center justify-between px-3 py-2 text-left text-[#ababab] hover:text-white transition-colors"
-          >
-            <span className="flex items-center gap-2 type-sm font-medium">
-              <Settings size={12} />
-              {t.settingsToggle}
-            </span>
-            <span className="flex items-center gap-2 type-xs text-[#8a8a8a]">
-              <span className={`h-2 w-2 rounded-md ${statusClass}`} />
-              {statusText}
-              {showAiSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            </span>
-          </button>
-
-          {showAiSettings && (
             <div
-              className="ai-settings-overlay"
-              onClick={() => setShowAiSettings(false)}
+              className={`glass-card upload-dropzone ${images.length > 0 ? 'upload-dropzone--filled' : ''}`}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
             >
-              <div
-                className="ai-settings-modal"
-                style={anchorStyle}
-                onClick={(e) => e.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
-              >
-                <div className="ai-settings-header">
-                  <div>
-                    <h2 className="ai-settings-title">{t.aiSettings}</h2>
-                    <p className="ai-settings-hint">{t.modelHint}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowAiSettings(false)}
-                    className="ai-settings-close"
-                    aria-label="Close"
+              {images.length > 0 ? (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={images.map(img => img.id)}
+                    strategy={rectSortingStrategy}
                   >
-                    <X size={16} />
-                  </button>
-                </div>
+                    <div className="upload-grid">
+                      {images.map((img) => (
+                        <SortableImage
+                          key={img.id}
+                          id={img.id}
+                          src={img.src}
+                          onRemove={handleRemoveImage}
+                        />
+                      ))}
 
-                <div className="ai-settings-body">
-                  <div className="ai-field">
-                    <label className="ai-field-label">{t.providerLabel}</label>
-                    <Combobox
-                      value={aiSettings.provider}
-                      allowCustom={false}
-                      options={[
-                        { value: 'gemini', label: 'Gemini' },
-                        { value: 'z-ai-coding', label: 'Z.AI Coding Plan' },
-                        { value: 'openai-compatible', label: 'OpenAI Compatible' },
-                      ]}
-                      onChange={(v) => handleProviderChange(v as AiSettings['provider'])}
-                    />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="upload-add-tile"
+                      >
+                        <ImagePlus size={20} className="upload-add-tile-icon" />
+                        <span className="type-xs">{language === 'zh' ? '添加' : 'Add'}</span>
+                      </button>
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                <div
+                  className="upload-empty"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="upload-icon-box">
+                    <Upload size={14} />
+                  </div>
+                  <p className="upload-empty-text">{t.uploadText}</p>
+                </div>
+              )}
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+              />
+            </div>
+            {images.length > 0 && (
+              <p className="type-xs ui-tertiary text-center mt-2">
+                {t.dragHint}
+              </p>
+            )}
+          </div>
+
+          {/* Action Button */}
+          <motion.button
+            onClick={handleSubmit}
+            disabled={isAnalyzing || (!context && images.length === 0)}
+            className="ui-action-button w-full py-3 rounded-lg flex items-center justify-center font-semibold type-sm"
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 size={14} className="animate-spin mr-2" />
+                {t.analyzingBtn}
+              </>
+            ) : (
+              <>
+                <Play size={14} className="mr-2 fill-current" />
+                {t.analyzeBtn}
+              </>
+            )}
+          </motion.button>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-6 pt-4 border-t border-[var(--border-default)]">
+          <div className="flex items-center type-sm ui-tertiary mb-1">
+            <CheckSquare size={10} className="mr-2" />
+            <span>{t.footerEdge}</span>
+          </div>
+          <div className="flex items-center type-sm ui-tertiary">
+            <FileText size={10} className="mr-2" />
+            <span>{t.footerCheck}</span>
+          </div>
+
+          <div
+            ref={settingsAnchorRef}
+            className={`glass-card relative mt-3 rounded-lg settings-anchor ${showAiSettings ? 'settings-anchor--raised' : ''}`}
+          >
+            <button
+              type="button"
+              onClick={() => setShowAiSettings((open) => !open)}
+              className="flex w-full items-center justify-between px-3 py-2 text-left ui-secondary hover:text-white transition-colors"
+            >
+              <span className="flex items-center gap-2 type-sm font-medium">
+                <Settings size={12} />
+                {t.settingsToggle}
+              </span>
+              <span className="flex items-center gap-2 type-xs ui-muted">
+                <span className={`h-2 w-2 rounded-md ${statusClass}`} />
+                {statusText}
+                {showAiSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </span>
+            </button>
+
+            {showAiSettings && (
+              <div
+                className="ai-settings-overlay"
+                onClick={() => setShowAiSettings(false)}
+              >
+                <div
+                  className="ai-settings-modal"
+                  style={anchorStyle}
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                >
+                  <div className="ai-settings-header">
+                    <div>
+                      <h2 className="ai-settings-title">{t.aiSettings}</h2>
+                      <p className="ai-settings-hint">{t.modelHint}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAiSettings(false)}
+                      className="ai-settings-close"
+                      aria-label="Close"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
 
-                  {aiSettings.provider !== 'gemini' && (
+                  <div className="ai-settings-body">
                     <div className="ai-field">
-                      <label className="ai-field-label">{t.baseUrlLabel}</label>
-                      <input
-                        className="ai-field-input glass-input"
-                        type="url"
-                        autoComplete="off"
-                        placeholder={t.baseUrlPlaceholder}
-                        value={aiSettings.baseUrl}
-                        onChange={(e) => updateAiSettings({ baseUrl: e.target.value })}
+                      <label className="ai-field-label">{t.providerLabel}</label>
+                      <Combobox
+                        value={aiSettings.provider}
+                        allowCustom={false}
+                        options={[
+                          { value: 'gemini', label: 'Gemini' },
+                          { value: 'z-ai-coding', label: 'Z.AI Coding Plan' },
+                          { value: 'openai-compatible', label: 'OpenAI Compatible' },
+                        ]}
+                        onChange={(v) => handleProviderChange(v as AiSettings['provider'])}
                       />
                     </div>
-                  )}
 
-                  <div className="ai-field">
-                    <label className="ai-field-label">{t.apiKeyLabel}</label>
-                    <input
-                      className="ai-field-input glass-input"
-                      type="password"
-                      autoComplete="off"
-                      placeholder={t.apiKeyPlaceholder}
-                      value={aiSettings.apiKey}
-                      onChange={(e) => updateAiSettings({ apiKey: e.target.value })}
-                    />
+                    {aiSettings.provider !== 'gemini' && (
+                      <div className="ai-field">
+                        <label className="ai-field-label">{t.baseUrlLabel}</label>
+                        <input
+                          className="ai-field-input glass-input"
+                          type="url"
+                          autoComplete="off"
+                          placeholder={t.baseUrlPlaceholder}
+                          value={aiSettings.baseUrl}
+                          onChange={(e) => updateAiSettings({ baseUrl: e.target.value })}
+                        />
+                      </div>
+                    )}
+
+                    <div className="ai-field">
+                      <label className="ai-field-label">{t.apiKeyLabel}</label>
+                      <input
+                        className="ai-field-input glass-input"
+                        type="password"
+                        autoComplete="off"
+                        placeholder={t.apiKeyPlaceholder}
+                        value={aiSettings.apiKey}
+                        onChange={(e) => updateAiSettings({ apiKey: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="ai-field">
+                      <label className="ai-field-label">{t.analysisModelLabel}</label>
+                      <Combobox
+                        value={aiSettings.analysisModel}
+                        options={modelOptions}
+                        onChange={(value) => updateAiSettings({ analysisModel: value })}
+                      />
+                    </div>
+
+                    <div className="ai-field">
+                      <label className="ai-field-label">{t.nodeModelLabel}</label>
+                      <Combobox
+                        value={aiSettings.nodeModel}
+                        options={modelOptions.filter((model) => model !== 'auto')}
+                        onChange={(value) => updateAiSettings({ nodeModel: value })}
+                      />
+                    </div>
                   </div>
 
-                  <div className="ai-field">
-                    <label className="ai-field-label">{t.analysisModelLabel}</label>
-                    <Combobox
-                      value={aiSettings.analysisModel}
-                      options={modelOptions}
-                      onChange={(value) => updateAiSettings({ analysisModel: value })}
-                    />
+                  <div className="ai-settings-footer">
+                    <button
+                      type="button"
+                      onClick={handleTestConnection}
+                      disabled={connectionStatus === 'testing'}
+                      className="ai-test-btn"
+                    >
+                      {connectionStatus === 'testing' ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
+                      {t.testConnection}
+                    </button>
                   </div>
-
-                  <div className="ai-field">
-                    <label className="ai-field-label">{t.nodeModelLabel}</label>
-                    <Combobox
-                      value={aiSettings.nodeModel}
-                      options={modelOptions.filter((model) => model !== 'auto')}
-                      onChange={(value) => updateAiSettings({ nodeModel: value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="ai-settings-footer">
-                  <button
-                    type="button"
-                    onClick={handleTestConnection}
-                    disabled={connectionStatus === 'testing'}
-                    className="ai-test-btn"
-                  >
-                    {connectionStatus === 'testing' ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
-                    {t.testConnection}
-                  </button>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </>
   );
