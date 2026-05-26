@@ -55,12 +55,12 @@ const zoomToSlider = (z: number): number => {
 const formatZoomLabel = (z: number): string => `${Math.round(z * 100)}%`;
 
 // 控件占位的安全 inset：onboarding 居中时要避开
-//   - 顶部 FloatingActions 横排按钮（top-4 + min-h-11，估 ≈ 64px）
+//   - 顶部 FloatingActions 横排按钮（main 区域 top-0 + 固定高 70px）
 //   - 右下角 MiniMap（约 220×160，留 24px 边距）
 //   - 底部 zoom slider 区（约 56px）
 // 把这些 inset 从 viewport 中切掉，得到的就是节点真正可以"被居中"的安全区。
 const SAFE_INSETS = {
-  top: 72,
+  top: 70,
   right: 260,
   bottom: 80,
   left: 24,
@@ -191,9 +191,9 @@ export default function FlowEditor({
           nodeStrokeColor="#d0d0d0"
           nodeStrokeWidth={2}
           offsetScale={1}
-          style={{ width: 248, height: 160, right: 1, bottom: 76 }}
+          style={{ width: 248, height: 160, right: 0, bottom: 60 }}
         />
-        <div className="flow-minimap-toolbar nodrag nopan nowheel absolute bottom-4 right-4 z-20 flex h-12 w-[248px] items-center justify-between gap-2 rounded-[16px] border border-[#303030] bg-[#202020] px-3 shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
+        <div className="flow-minimap-toolbar nodrag nopan nowheel absolute bottom-0 right-0 z-20 flex h-12 w-[248px] items-center justify-between gap-2 rounded-[16px] border border-[#303030] bg-[#202020] px-3 shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
 
           <button
             type="button"
@@ -228,7 +228,7 @@ export default function FlowEditor({
               放大/缩小画布
             </div>
           </div>
-          <span className="w-12 text-right font-mono type-xs text-[#d0d0d0]">{formatZoomLabel(zoomFraction)}</span>
+          <span className="w-12 text-right font-mono type-xs text-[var(--text-secondary)]">{formatZoomLabel(zoomFraction)}</span>
         </div>
         <Background gap={GRID_SIZE} size={1} color="rgba(255,255,255,0.16)" />
       </ReactFlow>
