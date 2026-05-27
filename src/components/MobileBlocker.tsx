@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Monitor, Copy, Check, ArrowRight } from 'lucide-react';
+import { Monitor, Copy, Check, ArrowRight, FileText } from 'lucide-react';
 
 interface Props {
   language: 'zh' | 'en';
-  onBypass: () => void;
+  onUseTextMode: () => void;
+  onForceDesktop: () => void;
 }
 
 const COPY = {
@@ -14,7 +15,9 @@ const COPY = {
     urlLabel: '当前链接',
     copy: '复制链接',
     copied: '已复制',
-    bypass: '继续在小屏访问（不推荐）',
+    textMode: '在小屏阅读（文本模式）',
+    textModeDesc: '不画流程图，使用文本/列表形式展示分析结果',
+    bypass: '强行使用桌面布局（不推荐）',
     tipTitle: '为什么需要桌面端？',
     tips: [
       '流程图布局需要横向空间，移动端无法展开多分支',
@@ -29,7 +32,9 @@ const COPY = {
     urlLabel: 'Current URL',
     copy: 'Copy link',
     copied: 'Copied',
-    bypass: 'Continue on small screen anyway',
+    textMode: 'Read on small screen (text mode)',
+    textModeDesc: 'Skip the flow diagram and present results as plain text/lists',
+    bypass: 'Force desktop layout anyway',
     tipTitle: 'Why desktop?',
     tips: [
       'Horizontal flow layouts need width that mobile cannot provide',
@@ -39,7 +44,7 @@ const COPY = {
   },
 } as const;
 
-export default function MobileBlocker({ language, onBypass }: Props) {
+export default function MobileBlocker({ language, onUseTextMode, onForceDesktop }: Props) {
   const t = COPY[language];
   const [copied, setCopied] = useState(false);
   const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -100,7 +105,19 @@ export default function MobileBlocker({ language, onBypass }: Props) {
 
         <button
           type="button"
-          onClick={onBypass}
+          onClick={onUseTextMode}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-stone-100 px-3 py-3 text-[13px] font-semibold text-stone-900 active:scale-[0.99] transition"
+        >
+          <FileText size={14} />
+          {t.textMode}
+        </button>
+        <p className="-mt-3 text-center text-[11px] leading-relaxed text-stone-500">
+          {t.textModeDesc}
+        </p>
+
+        <button
+          type="button"
+          onClick={onForceDesktop}
           className="self-center inline-flex items-center gap-1 text-[12px] text-stone-500 hover:text-stone-300 transition underline-offset-4 hover:underline"
         >
           {t.bypass}

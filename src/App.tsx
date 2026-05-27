@@ -7,6 +7,7 @@ import UsabilityScorecard from './components/UsabilityScorecard';
 import PageSuggestionList from './components/PageSuggestionList';
 import FlowList from './components/FlowList';
 import MobileBlocker from './components/MobileBlocker';
+import MobileShell from './components/MobileShell';
 import { analyzeFlow } from './services/ai';
 import { AiSettings, AnalysisResult, ComponentData, UsabilityScore, PageSuggestion, FlowPath } from './types';
 import { Download, Languages, Layers, ClipboardCheck, ChevronDown, ChevronUp, GitBranch, Loader2, ScanSearch, BrainCircuit, Sparkles, FileStack, Network, Share2, X as CloseIcon } from 'lucide-react';
@@ -386,11 +387,14 @@ export default function App() {
   const [summary, setSummary] = useState<string | null>(null);
   const [fullResult, setFullResult] = useState<AnalysisResult | null>(null);
   const [language, setLanguage] = useState<'zh' | 'en'>('zh');
-  // Mobile/小屏拦截：<1024px 显示桌面引导卡，用户可以选择继续使用
+  // Mobile/小屏拦截：<1024px 显示桌面引导卡。用户可选两种逆变：
+  //   - 'mobile-text'：用文本/列表形式呈现的小屏专用 shell（推荐）
+  //   - 'force-desktop'：强行使用桌面布局（不推荐，仅用于偶尔需要看一眼桌面 UI 的场景）
+  type NarrowMode = 'blocked' | 'mobile-text' | 'force-desktop';
   const [isNarrow, setIsNarrow] = useState<boolean>(
     typeof window !== 'undefined' ? window.innerWidth < 1024 : false
   );
-  const [bypassNarrow, setBypassNarrow] = useState(false);
+  const [narrowMode, setNarrowMode] = useState<NarrowMode>('blocked');
   useEffect(() => {
     const onResize = () => setIsNarrow(window.innerWidth < 1024);
     window.addEventListener('resize', onResize);
@@ -689,10 +693,19 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      {isNarrow && !bypassNarrow && (
+      {isNarrow && narrowMode === 'blocked' && (
         <MobileBlocker
           language={language}
-          onBypass={() => setBypassNarrow(true)}
+          onUseTextMode={() => setNarrowMode('mobile-text')}
+          onForceDesktop={() => setNarrowMode('force-desktop')}
+        />
+      )}
+      {isNarrow && narrowMode === 'mobile-text' && (
+        <MobileShell
+          language={language}
+          onToggleLanguage={() =>
+            setLanguage((l: 'zh' | 'en') => (l === 'zh' ? 'en' : 'zh'))
+          }
         />
       )}
       <AnimatePresence>
