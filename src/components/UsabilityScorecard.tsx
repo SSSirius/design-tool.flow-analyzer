@@ -20,7 +20,7 @@ export default function UsabilityScorecard({ isOpen, onClose, scores, language }
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/45 backdrop-blur-xl z-40"
+            className="fixed inset-0 bg-black/45 z-40"
           />
 
           {/* Panel */}

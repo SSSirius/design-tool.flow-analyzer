@@ -6,6 +6,7 @@ import ComponentList from './components/ComponentList';
 import UsabilityScorecard from './components/UsabilityScorecard';
 import PageSuggestionList from './components/PageSuggestionList';
 import FlowList from './components/FlowList';
+import MobileBlocker from './components/MobileBlocker';
 import { analyzeFlow } from './services/ai';
 import { AiSettings, AnalysisResult, ComponentData, UsabilityScore, PageSuggestion, FlowPath } from './types';
 import { Download, Languages, Layers, ClipboardCheck, ChevronDown, ChevronUp, GitBranch, Loader2, ScanSearch, BrainCircuit, Sparkles, FileStack, Network, Share2, X as CloseIcon } from 'lucide-react';
@@ -264,7 +265,7 @@ const FloatingActions = ({
   };
 
   return (
-    <div className="floating-actions absolute top-0 right-0 flex gap-2">
+    <div className="floating-actions absolute top-0 right-0 z-30 flex gap-2">
       <button
         onClick={() => setLanguage((l: string) => l === 'zh' ? 'en' : 'zh')}
         className="glass-button text-[var(--text-primary)] px-3 py-1.5 rounded-md type-sm  transition-all flex items-center"
@@ -385,6 +386,16 @@ export default function App() {
   const [summary, setSummary] = useState<string | null>(null);
   const [fullResult, setFullResult] = useState<AnalysisResult | null>(null);
   const [language, setLanguage] = useState<'zh' | 'en'>('zh');
+  // Mobile/小屏拦截：<1024px 显示桌面引导卡，用户可以选择继续使用
+  const [isNarrow, setIsNarrow] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
+  const [bypassNarrow, setBypassNarrow] = useState(false);
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const [showComponentList, setShowComponentList] = useState(false);
   const [showUsabilityScorecard, setShowUsabilityScorecard] = useState(false);
   const [showPageSuggestions, setShowPageSuggestions] = useState(false);
@@ -678,6 +689,12 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
+      {isNarrow && !bypassNarrow && (
+        <MobileBlocker
+          language={language}
+          onBypass={() => setBypassNarrow(true)}
+        />
+      )}
       <AnimatePresence>
         {isAnalyzing && <LoadingOverlay language={language} />}
       </AnimatePresence>
